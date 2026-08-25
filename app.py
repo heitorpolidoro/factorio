@@ -37,6 +37,16 @@ direction_label = st.sidebar.radio(
 )
 direction = "down" if direction_label.startswith("⬇") else "up"
 
+# The alternatives selector below only makes sense for a node that belongs to
+# the tree currently on screen. If the sidebar's root item or direction
+# changed since the last rerun, the previously clicked node may no longer be
+# part of the tree (or may map to a disjoint set of candidate recipes), so
+# clear the stale selection before it's used for anything.
+current_root_direction = (root_item, direction)
+if st.session_state.get("last_root_direction") != current_root_direction:
+    st.session_state.selected_node_item = None
+    st.session_state.last_root_direction = current_root_direction
+
 tree = build_tree(conn, root_item, direction, st.session_state.recipe_overrides)
 nodes, edges = tree_to_agraph(tree)
 
@@ -54,7 +64,13 @@ if st.session_state.selected_node_item:
     if len(candidates) > 1:
         st.subheader(f"Receitas alternativas para {item_name}")
         options = {f"{name} ({pack})": recipe_id for recipe_id, name, pack in candidates}
-        current_id = st.session_state.recipe_overrides.get(item_name, candidates[0][0])
+        # recipe_overrides is keyed by item name only (no direction/root scoping),
+        # so a stored override id from a different direction's candidate set may
+        # not exist among the current `candidates`. Fall back to the default
+        # (lowest-id) recipe for display in that case instead of crashing.
+        candidate_ids = {recipe_id for recipe_id, _, _ in candidates}
+        stored_id = st.session_state.recipe_overrides.get(item_name)
+        current_id = stored_id if stored_id in candidate_ids else candidates[0][0]
         labels = list(options.keys())
         current_label = next(label for label, recipe_id in options.items() if recipe_id == current_id)
         chosen_label = st.selectbox("Receita", labels, index=labels.index(current_label))
