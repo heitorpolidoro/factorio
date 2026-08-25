@@ -49,3 +49,16 @@ def test_tree_to_agraph_cycle_node_has_no_image():
     assert cycle_node.color == "#e74c3c"
     assert not hasattr(cycle_node, "image")
     assert edges[0].label == "↻"
+
+
+def test_tree_to_agraph_generates_placeholder_when_fallback_missing(tmp_path, monkeypatch):
+    import icons
+
+    monkeypatch.setattr(icons, "ICONS_DIR", tmp_path)
+    # tmp_path is empty: no per-item icon file, no _fallback.png either.
+
+    root = make_node("0", "some-item-with-no-icon-file")
+
+    nodes, edges = tree_to_agraph(root)
+
+    assert nodes[0].image.startswith("data:image/png;base64,")

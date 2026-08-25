@@ -42,3 +42,25 @@ def get_icon_path(item_name: str) -> Path:
     if candidate.exists():
         return candidate
     return ICONS_DIR / "_fallback.png"
+
+
+def get_icon_bytes(item_name: str) -> bytes:
+    """Bytes PNG do ícone (ou fallback), gerando um placeholder em memória
+    se nem o ícone do item nem `_fallback.png` existirem em disco."""
+    path = get_icon_path(item_name)
+    if path.exists():
+        return path.read_bytes()
+    return _generate_placeholder_bytes()
+
+
+def _generate_placeholder_bytes() -> bytes:
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    img = Image.new("RGBA", (32, 32), (120, 120, 120, 255))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([1, 1, 30, 30], outline=(80, 80, 80, 255), width=2)
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()

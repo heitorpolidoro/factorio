@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import base64
-from pathlib import Path
 
 from streamlit_agraph import Edge, Node
 
-from icons import get_icon_path
+from icons import get_icon_bytes
 from tree import TreeNode
 
 CYCLE_COLOR = "#e74c3c"
@@ -14,8 +13,8 @@ ALTERNATIVE_COLOR = "#f39c12"
 DEFAULT_COLOR = "#7f8c8d"
 
 
-def _encode_icon(path: Path) -> str:
-    data = path.read_bytes()
+def _encode_icon(item_name: str) -> str:
+    data = get_icon_bytes(item_name)
     return f"data:image/png;base64,{base64.b64encode(data).decode('ascii')}"
 
 
@@ -39,7 +38,7 @@ def _make_node(node: TreeNode) -> Node:
         kwargs["color"] = CYCLE_COLOR
     else:
         kwargs["shape"] = "circularImage"
-        kwargs["image"] = _encode_icon(get_icon_path(node.item_name))
+        kwargs["image"] = _encode_icon(node.item_name)
         kwargs["color"] = ALTERNATIVE_COLOR if node.has_alternatives else DEFAULT_COLOR
     return Node(**kwargs)
 
