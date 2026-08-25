@@ -1,4 +1,4 @@
-"""Construção da árvore de produção do Factorio a partir de recipes.db."""
+"""Builds the Factorio production tree from recipes.db."""
 from __future__ import annotations
 
 import sqlite3
@@ -93,7 +93,7 @@ def build_tree(
     recipe_overrides: Optional[dict[str, int]] = None,
 ) -> TreeNode:
     if not item_exists(conn, root_item):
-        raise ValueError(f"Item '{root_item}' não encontrado em recipes.db")
+        raise ValueError(f"Item '{root_item}' not found in recipes.db")
 
     overrides = recipe_overrides or {}
     root = TreeNode(

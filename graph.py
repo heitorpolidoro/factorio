@@ -1,4 +1,4 @@
-"""Converte uma TreeNode em nós/arestas do streamlit-agraph."""
+"""Converts a TreeNode into streamlit-agraph nodes/edges."""
 from __future__ import annotations
 
 import base64
@@ -37,7 +37,7 @@ def _make_node(node: TreeNode) -> Node:
         kwargs["shape"] = "dot"
         kwargs["color"] = CYCLE_COLOR
     else:
-        kwargs["shape"] = "circularImage"
+        kwargs["shape"] = "image"
         kwargs["image"] = _encode_icon(node.item_name)
         kwargs["color"] = ALTERNATIVE_COLOR if node.has_alternatives else DEFAULT_COLOR
     return Node(**kwargs)

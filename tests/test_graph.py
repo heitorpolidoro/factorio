@@ -28,7 +28,7 @@ def test_tree_to_agraph_root_and_child(tmp_path, monkeypatch):
     nodes, edges = tree_to_agraph(root)
 
     assert [n.id for n in nodes] == ["0", "0.0"]
-    assert nodes[0].shape == "circularImage"
+    assert nodes[0].shape == "image"
     assert nodes[0].image.startswith("data:image/png;base64,")
     assert nodes[1].label == "★ copper-cable"
     assert len(edges) == 1

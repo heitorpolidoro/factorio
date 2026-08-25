@@ -1,4 +1,4 @@
-"""Recipe Tree Explorer — árvore de produção interativa do Factorio."""
+"""Recipe Tree Explorer — interactive Factorio production tree."""
 import sqlite3
 from pathlib import Path
 
@@ -35,13 +35,13 @@ st.sidebar.header("Recipe Tree Explorer")
 
 item_names = list_all_item_names(conn)
 default_index = item_names.index("electronic-circuit") if "electronic-circuit" in item_names else 0
-root_item = st.sidebar.selectbox("Item raiz", item_names, index=default_index)
+root_item = st.sidebar.selectbox("Root item", item_names, index=default_index)
 
 direction_label = st.sidebar.radio(
-    "Direção",
-    options=["⬇ o que eu preciso", "⬆ o que eu posso fazer"],
+    "Direction",
+    options=["⬆ what I need", "⬇ what I can make"],
 )
-direction = "down" if direction_label.startswith("⬇") else "up"
+direction = "down" if "what I need" in direction_label else "up"
 
 # The alternatives selector below only makes sense for a node that belongs to
 # the tree currently on screen. If the sidebar's root item or direction
@@ -68,7 +68,7 @@ if st.session_state.selected_node_item:
     item_name = st.session_state.selected_node_item
     candidates = get_candidate_recipes(conn, item_name, direction)
     if len(candidates) > 1:
-        st.subheader(f"Receitas alternativas para {item_name}")
+        st.subheader(f"Alternative recipes for {item_name}")
         options = {f"{name} ({pack})": recipe_id for recipe_id, name, pack in candidates}
         # recipe_overrides is keyed by item name only (no direction/root scoping),
         # so a stored override id from a different direction's candidate set may
@@ -77,7 +77,7 @@ if st.session_state.selected_node_item:
         current_id = resolve_recipe_id(candidates, st.session_state.recipe_overrides, item_name)
         labels = list(options.keys())
         current_label = next(label for label, recipe_id in options.items() if recipe_id == current_id)
-        chosen_label = st.selectbox("Receita", labels, index=labels.index(current_label))
+        chosen_label = st.selectbox("Recipe", labels, index=labels.index(current_label))
         chosen_id = options[chosen_label]
         if chosen_id != current_id:
             st.session_state.recipe_overrides[item_name] = chosen_id

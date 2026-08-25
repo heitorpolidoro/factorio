@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Baixa e cacheia localmente os ícones dos itens/fluidos de recipes.db.
+"""Downloads and locally caches icons for the items/fluids in recipes.db.
 
-Uso: python3 scripts/fetch_icons.py
-Não é chamado por app.py — roda manualmente, uma vez (ou para atualizar o cache).
+Usage: python3 scripts/fetch_icons.py
+Not called by app.py — run manually, once (or to refresh the cache).
 """
 from __future__ import annotations
 
@@ -63,14 +63,14 @@ def main() -> None:
         if dest.exists():
             continue
         ok = download_icon(name)
-        print(f"[{i}/{len(names)}] {name}: {'ok' if ok else 'FALTOU'}")
+        print(f"[{i}/{len(names)}] {name}: {'ok' if ok else 'MISSING'}")
         if not ok:
             missing.append(name)
         time.sleep(DELAY_SECONDS)
 
-    print(f"\nConcluído. {len(names) - len(missing)}/{len(names)} ícones baixados.")
+    print(f"\nDone. {len(names) - len(missing)}/{len(names)} icons downloaded.")
     if missing:
-        print("Sem ícone (usando fallback), revisar manualmente depois:")
+        print("No icon found (using fallback), review manually later:")
         for name in missing:
             print(f"  {name}")
 

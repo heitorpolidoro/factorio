@@ -1,4 +1,4 @@
-"""Mapeamento de nomes internos para ícones da wiki do Factorio, com cache local."""
+"""Maps internal item names to Factorio wiki icons, with a local cache."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,13 +7,14 @@ ICONS_DIR = Path(__file__).resolve().parent / "icons"
 
 
 def wiki_title_variants(item_name: str) -> list[str]:
-    """Candidatos de título de página da wiki para item_name, em ordem de tentativa.
+    """Candidate wiki page titles for item_name, in try order.
 
-    Variante primária trata todo hífen como separador de palavra (cobre a
-    maioria dos itens, ex: 'electronic-circuit' -> 'Electronic circuit').
-    Variante secundária mantém um sufixo numérico grudado na palavra
-    anterior com hífen (cobre nomes estilo isótopo, ex: 'uranium-238' ->
-    'Uranium-238'). Só as diferentes da primária.
+    The primary variant treats every hyphen as a word separator (covers
+    most items, e.g. 'electronic-circuit' -> 'Electronic circuit').
+    The secondary variant keeps a trailing numeric segment attached to the
+    previous word with a hyphen (covers isotope-style names, e.g.
+    'uranium-238' -> 'Uranium-238'). Only included when different from
+    the primary.
     """
     words = item_name.split("-")
     primary = " ".join(words)
@@ -45,8 +46,8 @@ def get_icon_path(item_name: str) -> Path:
 
 
 def get_icon_bytes(item_name: str) -> bytes:
-    """Bytes PNG do ícone (ou fallback), gerando um placeholder em memória
-    se nem o ícone do item nem `_fallback.png` existirem em disco."""
+    """PNG bytes for the icon (or fallback), generating an in-memory
+    placeholder if neither the item's icon nor `_fallback.png` exist on disk."""
     path = get_icon_path(item_name)
     if path.exists():
         return path.read_bytes()

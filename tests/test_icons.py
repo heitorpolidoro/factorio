@@ -15,7 +15,7 @@ def test_wiki_title_variants_with_trailing_number():
 
 
 def test_wiki_title_variants_dedup_when_no_number():
-    # 'productivity-module' não tem sufixo numérico: só uma variante.
+    # 'productivity-module' has no numeric suffix: only one variant.
     assert icons.wiki_title_variants("productivity-module") == ["Productivity module"]
 
 

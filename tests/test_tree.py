@@ -43,7 +43,7 @@ def test_build_tree_raises_for_unknown_item(conn):
 
 
 def test_build_tree_leaf_raw_material(conn):
-    # crude-oil nunca é resultado de nenhuma receita no dataset
+    # crude-oil is never the result of any recipe in the dataset
     tree = build_tree(conn, "crude-oil", "down")
     assert tree.item_name == "crude-oil"
     assert tree.children == []
@@ -52,8 +52,8 @@ def test_build_tree_leaf_raw_material(conn):
 
 
 def test_build_tree_default_recipe_is_lowest_id(conn):
-    # copper-cable tem 2 receitas candidatas (fora reciclagem): copper-cable (base, id 58)
-    # e casting-copper-cable (space-age, id 265) — a scrap-recycling (id 287) é excluída.
+    # copper-cable has 2 candidate recipes (excluding recycling): copper-cable (base, id 58)
+    # and casting-copper-cable (space-age, id 265) — scrap-recycling (id 287) is excluded.
     tree = build_tree(conn, "copper-cable", "down")
     assert tree.recipe_name == "copper-cable"
     assert tree.recipe_pack == "base"
@@ -68,14 +68,14 @@ def test_get_candidate_recipes_excludes_recycling(conn):
 
 
 def test_build_tree_respects_override(conn):
-    # 265 = casting-copper-cable
+    # 265 = casting-copper-cable (used as an explicit override)
     tree = build_tree(conn, "copper-cable", "down", recipe_overrides={"copper-cable": 265})
     assert tree.recipe_name == "casting-copper-cable"
     assert tree.recipe_pack == "space-age"
 
 
 def test_build_tree_marks_self_loop_as_cycle(conn):
-    # 13 = coal-liquefaction, que consome E produz heavy-oil
+    # 13 = coal-liquefaction, which consumes AND produces heavy-oil
     tree = build_tree(conn, "heavy-oil", "down", recipe_overrides={"heavy-oil": 13})
     assert tree.recipe_name == "coal-liquefaction"
     cycle_children = [c for c in tree.children if c.item_name == "heavy-oil"]
@@ -87,7 +87,7 @@ def test_build_tree_marks_self_loop_as_cycle(conn):
 
 
 def test_build_tree_direction_up(conn):
-    # iron-plate como ingrediente: menor recipe_id entre quem o consome é 16 (sulfuric-acid)
+    # iron-plate as an ingredient: the lowest recipe_id among its consumers is 16 (sulfuric-acid)
     tree = build_tree(conn, "iron-plate", "up")
     assert tree.recipe_name == "sulfuric-acid"
     assert tree.has_alternatives is True
@@ -117,16 +117,16 @@ def test_list_all_item_names_includes_known_items(conn):
 
 
 def test_get_candidate_recipes_excludes_hidden(conn):
-    # express-loader (id 152) é hidden = 1 (entidade só de mapa-editor/cheat) e
-    # não deve aparecer entre os candidatos para express-transport-belt (up).
+    # express-loader (id 152) is hidden = 1 (a map-editor/cheat-only entity) and
+    # must not appear among the candidates for express-transport-belt (up).
     candidates = get_candidate_recipes(conn, "express-transport-belt", "up")
     names = [name for _, name, _ in candidates]
     assert "express-loader" not in names
 
 
 def test_build_tree_up_default_excludes_hidden_recipe(conn):
-    # Antes do fix, o candidato de menor id era express-loader (id 152, hidden).
-    # Depois do fix, o menor id não-hidden é turbo-transport-belt (id 267).
+    # Before the fix, the lowest-id candidate was express-loader (id 152, hidden).
+    # After the fix, the lowest non-hidden id is turbo-transport-belt (id 267).
     tree = build_tree(conn, "express-transport-belt", "up")
     assert tree.recipe_name != "express-loader"
     assert tree.recipe_name == "turbo-transport-belt"
