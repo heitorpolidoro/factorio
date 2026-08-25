@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+.superpowers/
+icons/*.png
+!icons/.gitkeep
