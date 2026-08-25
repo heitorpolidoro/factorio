@@ -7,18 +7,49 @@ from typing import Literal, Optional
 
 Direction = Literal["down", "up"]
 
+# Items gathered directly (mined, pumped, farmed) rather than crafted, even
+# though the game also offers alternate synthesis recipes for some of them
+# (e.g. coal-synthesis, ice-melting). Always treated as leaves in the "down"
+# direction — get_candidate_recipes() short-circuits to [] for these — so
+# they read as a starting point rather than something to keep breaking down.
+# Not exhaustive: extend as more of these turn up.
+RAW_MATERIALS = frozenset(
+    {
+        "coal",
+        "iron-ore",
+        "copper-ore",
+        "stone",
+        "uranium-ore",
+        "crude-oil",
+        "water",
+        "wood",
+        "raw-fish",
+    }
+)
+
 
 @dataclass
-class TreeNode:
-    node_id: str
+class ProductionNode:
     item_name: str
     kind: str
-    amount: Optional[float]
     recipe_name: Optional[str]
     recipe_pack: Optional[str]
-    is_cycle: bool
     has_alternatives: bool
-    children: list["TreeNode"] = field(default_factory=list)
+
+
+@dataclass
+class ProductionEdge:
+    source: str  # item_name of the recipe's own item (the one that needs `target`)
+    target: str  # item_name of the ingredient
+    amount: Optional[float]
+    is_cycle: bool  # True if target is an ancestor of source in this expansion
+
+
+@dataclass
+class ProductionGraph:
+    root: str
+    nodes: dict[str, "ProductionNode"] = field(default_factory=dict)
+    edges: list["ProductionEdge"] = field(default_factory=list)
 
 
 def get_item_kind(conn: sqlite3.Connection, item_name: str) -> Optional[str]:
@@ -44,6 +75,9 @@ def item_exists(conn: sqlite3.Connection, item_name: str) -> bool:
 def get_candidate_recipes(
     conn: sqlite3.Connection, item_name: str, direction: Direction
 ) -> list[tuple[int, str, str]]:
+    if direction == "down" and item_name in RAW_MATERIALS:
+        return []
+
     join_table = "results" if direction == "down" else "ingredients"
     rows = conn.execute(
         f"""
@@ -91,107 +125,63 @@ def _get_recipe_children_rows(
     return [(row[0], row[1], row[2]) for row in rows]
 
 
-def build_tree(
+def build_down_graph(
     conn: sqlite3.Connection,
     root_item: str,
-    direction: Direction,
     recipe_overrides: Optional[dict[str, int]] = None,
-) -> TreeNode:
+) -> ProductionGraph:
+    """Builds the "what I need" DAG for root_item: each item appears as
+    exactly one node no matter how many places need it (e.g. iron-plate is
+    one node with several incoming edges, not a separate copy per recipe
+    that uses it). A node is expanded at most once — the first time it's
+    reached — which also makes cycle detection trivial: by the time a
+    cyclic reference is encountered the node is already in `graph.nodes`,
+    so it's simply skipped rather than recursed into again.
+    """
     if not item_exists(conn, root_item):
         raise ValueError(f"Item '{root_item}' not found in recipes.db")
 
     overrides = recipe_overrides or {}
-    root = TreeNode(
-        node_id="0",
-        item_name=root_item,
-        kind=get_item_kind(conn, root_item) or "item",
-        amount=None,
+    graph = ProductionGraph(root=root_item)
+    _expand_down(conn, root_item, overrides, ancestors={root_item}, graph=graph)
+    return graph
+
+
+def _expand_down(
+    conn: sqlite3.Connection,
+    item_name: str,
+    overrides: dict[str, int],
+    ancestors: set[str],
+    graph: ProductionGraph,
+) -> None:
+    candidates = get_candidate_recipes(conn, item_name, "down")
+    node = ProductionNode(
+        item_name=item_name,
+        kind=get_item_kind(conn, item_name) or "item",
         recipe_name=None,
         recipe_pack=None,
-        is_cycle=False,
-        has_alternatives=False,
+        has_alternatives=len(candidates) > 1,
     )
-    _expand(conn, root, direction, overrides, ancestors={root_item})
-    return root
-
-
-def _expand(
-    conn: sqlite3.Connection,
-    node: TreeNode,
-    direction: Direction,
-    overrides: dict[str, int],
-    ancestors: set[str],
-    depth: int = 0,
-) -> None:
-    candidates = get_candidate_recipes(conn, node.item_name, direction)
+    graph.nodes[item_name] = node
     if not candidates:
-        node.has_alternatives = False
         return
 
-    if direction == "down":
-        # Multiple candidates here are alternative recipes for producing the
-        # *same* result — mutually exclusive, so pick one (with override) and
-        # expand only its ingredients.
-        node.has_alternatives = len(candidates) > 1
-        chosen_id = resolve_recipe_id(candidates, overrides, node.item_name)
-        chosen = next(c for c in candidates if c[0] == chosen_id)
-        node.recipe_name, node.recipe_pack = chosen[1], chosen[2]
-        rows = _get_recipe_children_rows(conn, chosen[0], direction)
-        _add_children(conn, node, rows, direction, overrides, ancestors, depth)
-        return
+    # Multiple candidates here are alternative recipes for producing the
+    # *same* result — mutually exclusive, so pick one (with override) and
+    # expand only its ingredients.
+    chosen_id = resolve_recipe_id(candidates, overrides, item_name)
+    chosen = next(c for c in candidates if c[0] == chosen_id)
+    node.recipe_name, node.recipe_pack = chosen[1], chosen[2]
 
-    # direction == "up": each candidate recipe consumes this item to make a
-    # *different* product — these aren't alternatives for the same thing, so
-    # every candidate's results are shown as siblings instead of picking one.
-    node.has_alternatives = False
-    node.recipe_name = None
-    node.recipe_pack = None
-    if depth > 0:
-        # Only the root fans out. A common item (e.g. a basic circuit or
-        # plate) can be used by 50+ recipes, each cascading into dozens
-        # more — fanning out at every depth would explode combinatorially.
-        # Search one of the results directly to keep exploring from there.
-        return
-    for recipe_id, _, _ in candidates:
-        rows = _get_recipe_children_rows(conn, recipe_id, direction)
-        _add_children(conn, node, rows, direction, overrides, ancestors, depth)
-
-
-def _add_children(
-    conn: sqlite3.Connection,
-    node: TreeNode,
-    rows: list[tuple[str, str, float]],
-    direction: Direction,
-    overrides: dict[str, int],
-    ancestors: set[str],
-    depth: int,
-) -> None:
-    for child_name, child_kind, child_amount in rows:
-        child_node_id = f"{node.node_id}.{len(node.children)}"
+    rows = _get_recipe_children_rows(conn, chosen[0], "down")
+    for child_name, _child_kind, child_amount in rows:
         is_cycle = child_name in ancestors
-        child = TreeNode(
-            node_id=child_node_id,
-            item_name=child_name,
-            kind=child_kind,
-            amount=child_amount,
-            recipe_name=None,
-            recipe_pack=None,
-            is_cycle=is_cycle,
-            has_alternatives=False,
+        already_built = child_name in graph.nodes
+        graph.edges.append(
+            ProductionEdge(source=item_name, target=child_name, amount=child_amount, is_cycle=is_cycle)
         )
-        node.children.append(child)
-        if not is_cycle:
-            _expand(conn, child, direction, overrides, ancestors | {child_name}, depth + 1)
-
-
-def find_node_by_id(node: TreeNode, node_id: str) -> Optional[TreeNode]:
-    if node.node_id == node_id:
-        return node
-    for child in node.children:
-        found = find_node_by_id(child, node_id)
-        if found:
-            return found
-    return None
+        if not already_built:
+            _expand_down(conn, child_name, overrides, ancestors | {child_name}, graph)
 
 
 def list_all_item_names(conn: sqlite3.Connection) -> list[str]:

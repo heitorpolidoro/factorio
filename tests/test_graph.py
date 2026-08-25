@@ -1,64 +1,77 @@
-from graph import tree_to_agraph
-from tree import TreeNode
+from graph import graph_to_agraph
+from tree import ProductionEdge, ProductionGraph, ProductionNode
 
 
-def make_node(node_id, item_name, amount=None, is_cycle=False, has_alternatives=False):
-    return TreeNode(
-        node_id=node_id,
+def make_node(item_name, has_alternatives=False):
+    return ProductionNode(
         item_name=item_name,
         kind="item",
-        amount=amount,
         recipe_name=None,
         recipe_pack=None,
-        is_cycle=is_cycle,
         has_alternatives=has_alternatives,
     )
 
 
-def test_tree_to_agraph_root_and_child(tmp_path, monkeypatch):
+def test_graph_to_agraph_root_and_child(tmp_path, monkeypatch):
     import icons
 
     monkeypatch.setattr(icons, "ICONS_DIR", tmp_path)
     (tmp_path / "_fallback.png").write_bytes(b"\x89PNG\r\n\x1a\nfake-png-bytes-for-test")
 
-    root = make_node("0", "electronic-circuit")
-    child = make_node("0.0", "copper-cable", amount=3.0, has_alternatives=True)
-    root.children.append(child)
+    graph = ProductionGraph(root="electronic-circuit")
+    graph.nodes["electronic-circuit"] = make_node("electronic-circuit")
+    graph.nodes["copper-cable"] = make_node("copper-cable", has_alternatives=True)
+    graph.edges.append(
+        ProductionEdge(source="electronic-circuit", target="copper-cable", amount=3.0, is_cycle=False)
+    )
 
-    nodes, edges = tree_to_agraph(root)
+    nodes, edges = graph_to_agraph(graph)
 
-    assert [n.id for n in nodes] == ["0", "0.0"]
-    assert nodes[0].shape == "image"
-    assert nodes[0].image.startswith("data:image/png;base64,")
-    assert nodes[1].label == "★ copper-cable"
+    nodes_by_id = {n.id for n in nodes}
+    assert nodes_by_id == {"electronic-circuit", "copper-cable"}
+    copper_node = next(n for n in nodes if n.id == "copper-cable")
+    assert copper_node.shape == "image"
+    assert copper_node.image.startswith("data:image/png;base64,")
+    assert copper_node.label == "★ copper-cable"
+    assert copper_node.color == "#f39c12"
+
     assert len(edges) == 1
-    assert edges[0].source == "0"
-    assert edges[0].to == "0.0"
+    assert edges[0].source == "electronic-circuit"
+    assert edges[0].to == "copper-cable"
     assert edges[0].label == "×3"
 
 
-def test_tree_to_agraph_cycle_node_has_no_image():
-    root = make_node("0", "heavy-oil")
-    cycle_child = make_node("0.1", "heavy-oil", amount=25.0, is_cycle=True)
-    root.children.append(cycle_child)
+def test_graph_to_agraph_cycle_edge_is_marked(tmp_path, monkeypatch):
+    import icons
 
-    nodes, edges = tree_to_agraph(root)
+    monkeypatch.setattr(icons, "ICONS_DIR", tmp_path)
+    (tmp_path / "_fallback.png").write_bytes(b"\x89PNG\r\n\x1a\nfake-png-bytes-for-test")
 
-    cycle_node = nodes[1]
-    assert cycle_node.shape == "dot"
-    assert cycle_node.color == "#e74c3c"
-    assert not hasattr(cycle_node, "image")
+    # A cycle-closing edge points back to an already-existing node (e.g.
+    # heavy-oil -> heavy-oil via coal-liquefaction) — the node itself is
+    # normal (still gets its icon), only the edge is marked.
+    graph = ProductionGraph(root="heavy-oil")
+    graph.nodes["heavy-oil"] = make_node("heavy-oil")
+    graph.edges.append(ProductionEdge(source="heavy-oil", target="heavy-oil", amount=25.0, is_cycle=True))
+
+    nodes, edges = graph_to_agraph(graph)
+
+    assert nodes[0].shape == "image"
+    assert nodes[0].image.startswith("data:image/png;base64,")
     assert edges[0].label == "↻"
+    assert edges[0].color == "#e74c3c"
+    assert edges[0].dashes is True
 
 
-def test_tree_to_agraph_generates_placeholder_when_fallback_missing(tmp_path, monkeypatch):
+def test_graph_to_agraph_generates_placeholder_when_fallback_missing(tmp_path, monkeypatch):
     import icons
 
     monkeypatch.setattr(icons, "ICONS_DIR", tmp_path)
     # tmp_path is empty: no per-item icon file, no _fallback.png either.
 
-    root = make_node("0", "some-item-with-no-icon-file")
+    graph = ProductionGraph(root="some-item-with-no-icon-file")
+    graph.nodes["some-item-with-no-icon-file"] = make_node("some-item-with-no-icon-file")
 
-    nodes, edges = tree_to_agraph(root)
+    nodes, edges = graph_to_agraph(graph)
 
     assert nodes[0].image.startswith("data:image/png;base64,")

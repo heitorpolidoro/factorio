@@ -1,4 +1,4 @@
-"""Converts a TreeNode into streamlit-agraph nodes/edges."""
+"""Converts a ProductionGraph into streamlit-agraph nodes/edges."""
 from __future__ import annotations
 
 import base64
@@ -6,7 +6,7 @@ import base64
 from streamlit_agraph import Edge, Node
 
 from icons import get_icon_bytes
-from tree import TreeNode
+from tree import ProductionEdge, ProductionGraph, ProductionNode
 
 CYCLE_COLOR = "#e74c3c"
 ALTERNATIVE_COLOR = "#f39c12"
@@ -18,41 +18,38 @@ def _encode_icon(item_name: str) -> str:
     return f"data:image/png;base64,{base64.b64encode(data).decode('ascii')}"
 
 
-def tree_to_agraph(root: TreeNode) -> tuple[list[Node], list[Edge]]:
-    nodes: list[Node] = []
-    edges: list[Edge] = []
-    _collect(root, nodes, edges)
+def graph_to_agraph(graph: ProductionGraph) -> tuple[list[Node], list[Edge]]:
+    nodes = [_make_node(node) for node in graph.nodes.values()]
+    edges = [_make_edge(edge) for edge in graph.edges]
     return nodes, edges
 
 
-def _make_node(node: TreeNode) -> Node:
+def _make_node(node: ProductionNode) -> Node:
     label = ("★ " if node.has_alternatives else "") + node.item_name
-    kwargs = {
-        "id": node.node_id,
-        "title": node.item_name,
-        "label": label,
-        "size": 25,
-    }
-    if node.is_cycle:
-        kwargs["shape"] = "dot"
-        kwargs["color"] = CYCLE_COLOR
+    return Node(
+        id=node.item_name,
+        title=node.item_name,
+        label=label,
+        size=25,
+        shape="image",
+        image=_encode_icon(node.item_name),
+        color=ALTERNATIVE_COLOR if node.has_alternatives else DEFAULT_COLOR,
+    )
+
+
+def _make_edge(edge: ProductionEdge) -> Edge:
+    if edge.is_cycle:
+        label = "↻"
+    elif edge.amount is not None:
+        label = f"×{edge.amount:g}"
     else:
-        kwargs["shape"] = "image"
-        kwargs["image"] = _encode_icon(node.item_name)
-        kwargs["color"] = ALTERNATIVE_COLOR if node.has_alternatives else DEFAULT_COLOR
-    return Node(**kwargs)
+        label = ""
 
-
-def _edge_label(child: TreeNode) -> str:
-    if child.is_cycle:
-        return "↻"
-    if child.amount is None:
-        return ""
-    return f"×{child.amount:g}"
-
-
-def _collect(node: TreeNode, nodes: list[Node], edges: list[Edge]) -> None:
-    nodes.append(_make_node(node))
-    for child in node.children:
-        edges.append(Edge(source=node.node_id, target=child.node_id, label=_edge_label(child)))
-        _collect(child, nodes, edges)
+    kwargs = {"source": edge.source, "target": edge.target, "label": label}
+    if edge.is_cycle:
+        # Closes a loop back to an ancestor instead of a normal ingredient
+        # edge — call that out visually rather than let it look identical
+        # to an ordinary shared-node reference (e.g. iron-plate used twice).
+        kwargs["color"] = CYCLE_COLOR
+        kwargs["dashes"] = True
+    return Edge(**kwargs)

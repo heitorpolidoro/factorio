@@ -5,12 +5,11 @@ from pathlib import Path
 import streamlit as st
 from streamlit_agraph import Config, agraph
 
-from graph import tree_to_agraph
+from graph import graph_to_agraph
 from icons import get_icon_bytes
 from tree import (
-    build_tree,
+    build_down_graph,
     find_end_products,
-    find_node_by_id,
     get_candidate_recipes,
     list_all_item_names,
     resolve_recipe_id,
@@ -55,8 +54,8 @@ if direction == "down":
         st.session_state.selected_node_item = None
         st.session_state.last_root_direction = current_root_direction
 
-    tree = build_tree(conn, root_item, direction, st.session_state.recipe_overrides)
-    nodes, edges = tree_to_agraph(tree)
+    graph = build_down_graph(conn, root_item, st.session_state.recipe_overrides)
+    nodes, edges = graph_to_agraph(graph)
 
     config = Config(width=900, height=750, directed=True, physics=False, hierarchical=True)
     # Set directly on the nested layout dict rather than via Config(**kwargs):
@@ -67,10 +66,10 @@ if direction == "down":
     config.layout["hierarchical"]["sortMethod"] = "directed"  # rank by edge direction (parent -> child), not node degree
     clicked_node_id = agraph(nodes=nodes, edges=edges, config=config)
 
-    if clicked_node_id:
-        clicked_node = find_node_by_id(tree, clicked_node_id)
-        if clicked_node:
-            st.session_state.selected_node_item = clicked_node.item_name
+    if clicked_node_id and clicked_node_id in graph.nodes:
+        # Node ids are item names directly (build_down_graph dedupes by
+        # item), so the clicked id is already the item to look up.
+        st.session_state.selected_node_item = clicked_node_id
 
     if st.session_state.selected_node_item:
         item_name = st.session_state.selected_node_item
