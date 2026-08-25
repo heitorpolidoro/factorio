@@ -10,6 +10,7 @@ from tree import (
     get_item_kind,
     item_exists,
     list_all_item_names,
+    resolve_recipe_id,
     TreeNode,
 )
 
@@ -113,3 +114,40 @@ def test_list_all_item_names_includes_known_items(conn):
     assert "electronic-circuit" in names
     assert "crude-oil" in names
     assert names == sorted(names)
+
+
+def test_get_candidate_recipes_excludes_hidden(conn):
+    # express-loader (id 152) é hidden = 1 (entidade só de mapa-editor/cheat) e
+    # não deve aparecer entre os candidatos para express-transport-belt (up).
+    candidates = get_candidate_recipes(conn, "express-transport-belt", "up")
+    names = [name for _, name, _ in candidates]
+    assert "express-loader" not in names
+
+
+def test_build_tree_up_default_excludes_hidden_recipe(conn):
+    # Antes do fix, o candidato de menor id era express-loader (id 152, hidden).
+    # Depois do fix, o menor id não-hidden é turbo-transport-belt (id 267).
+    tree = build_tree(conn, "express-transport-belt", "up")
+    assert tree.recipe_name != "express-loader"
+    assert tree.recipe_name == "turbo-transport-belt"
+
+
+def test_resolve_recipe_id_override_present_in_candidates():
+    candidates = [(10, "recipe-a", "base"), (20, "recipe-b", "space-age")]
+    overrides = {"widget": 20}
+    assert resolve_recipe_id(candidates, overrides, "widget") == 20
+
+
+def test_resolve_recipe_id_override_absent_falls_back_to_default():
+    candidates = [(10, "recipe-a", "base"), (20, "recipe-b", "space-age")]
+    # override id 999 doesn't match any candidate id
+    overrides = {"widget": 999}
+    assert resolve_recipe_id(candidates, overrides, "widget") == 10
+    # override for a different item entirely — no entry for "widget"
+    overrides_other_item = {"other-item": 20}
+    assert resolve_recipe_id(candidates, overrides_other_item, "widget") == 10
+
+
+def test_resolve_recipe_id_no_override_falls_back_to_default():
+    candidates = [(10, "recipe-a", "base"), (20, "recipe-b", "space-age")]
+    assert resolve_recipe_id(candidates, {}, "widget") == 10

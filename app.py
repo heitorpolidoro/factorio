@@ -6,7 +6,13 @@ import streamlit as st
 from streamlit_agraph import Config, agraph
 
 from graph import tree_to_agraph
-from tree import build_tree, find_node_by_id, get_candidate_recipes, list_all_item_names
+from tree import (
+    build_tree,
+    find_node_by_id,
+    get_candidate_recipes,
+    list_all_item_names,
+    resolve_recipe_id,
+)
 
 DB_PATH = Path(__file__).parent / "recipes.db"
 
@@ -68,9 +74,7 @@ if st.session_state.selected_node_item:
         # so a stored override id from a different direction's candidate set may
         # not exist among the current `candidates`. Fall back to the default
         # (lowest-id) recipe for display in that case instead of crashing.
-        candidate_ids = {recipe_id for recipe_id, _, _ in candidates}
-        stored_id = st.session_state.recipe_overrides.get(item_name)
-        current_id = stored_id if stored_id in candidate_ids else candidates[0][0]
+        current_id = resolve_recipe_id(candidates, st.session_state.recipe_overrides, item_name)
         labels = list(options.keys())
         current_label = next(label for label, recipe_id in options.items() if recipe_id == current_id)
         chosen_label = st.selectbox("Receita", labels, index=labels.index(current_label))

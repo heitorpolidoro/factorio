@@ -52,11 +52,27 @@ def get_candidate_recipes(
         JOIN {join_table} j ON j.recipe_id = r.id
         WHERE j.name = ?
           AND (r.categories IS NULL OR r.categories NOT LIKE '%"recycling"%')
+          -- hidden = map-editor/cheat-only recipes (e.g. loaders, infinity-chest),
+          -- not craftable in normal play: exclude from candidates.
+          -- NOTE: deliberately NOT filtering on `enabled` — 299/319 recipes have
+          -- enabled = 0, which just means "not yet unlocked by tech" in a fresh
+          -- game, not a reason to exclude the recipe from the tree.
+          AND r.hidden = 0
         ORDER BY r.id ASC
         """,
         (item_name,),
     ).fetchall()
     return [(row[0], row[1], row[2]) for row in rows]
+
+
+def resolve_recipe_id(
+    candidates: list[tuple[int, str, str]], overrides: dict[str, int], item_name: str
+) -> int:
+    """Recipe id to use for item_name: the stored override if it's among
+    the current candidates, otherwise the default (lowest-id) candidate."""
+    candidate_ids = {c[0] for c in candidates}
+    stored_id = overrides.get(item_name)
+    return stored_id if stored_id in candidate_ids else candidates[0][0]
 
 
 def _get_recipe_children_rows(
@@ -106,8 +122,8 @@ def _expand(
     if not candidates:
         return
 
-    chosen_id = overrides.get(node.item_name, candidates[0][0])
-    chosen = next((c for c in candidates if c[0] == chosen_id), candidates[0])
+    chosen_id = resolve_recipe_id(candidates, overrides, node.item_name)
+    chosen = next(c for c in candidates if c[0] == chosen_id)
     recipe_id, recipe_name, pack = chosen
     node.recipe_name = recipe_name
     node.recipe_pack = pack
