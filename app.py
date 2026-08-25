@@ -50,7 +50,7 @@ if st.session_state.get("last_root_direction") != current_root_direction:
 tree = build_tree(conn, root_item, direction, st.session_state.recipe_overrides)
 nodes, edges = tree_to_agraph(tree)
 
-config = Config(width=1200, height=750, directed=True, physics=False, hierarchical=True)
+config = Config(width=900, height=750, directed=True, physics=False, hierarchical=True)
 clicked_node_id = agraph(nodes=nodes, edges=edges, config=config)
 
 if clicked_node_id:
