@@ -19,6 +19,7 @@ def test_tree_to_agraph_root_and_child(tmp_path, monkeypatch):
     import icons
 
     monkeypatch.setattr(icons, "ICONS_DIR", tmp_path)
+    (tmp_path / "_fallback.png").write_bytes(b"\x89PNG\r\n\x1a\nfake-png-bytes-for-test")
 
     root = make_node("0", "electronic-circuit")
     child = make_node("0.0", "copper-cable", amount=3.0, has_alternatives=True)
@@ -28,7 +29,7 @@ def test_tree_to_agraph_root_and_child(tmp_path, monkeypatch):
 
     assert [n.id for n in nodes] == ["0", "0.0"]
     assert nodes[0].shape == "circularImage"
-    assert nodes[0].image == str(tmp_path / "_fallback.png")
+    assert nodes[0].image.startswith("data:image/png;base64,")
     assert nodes[1].label == "★ copper-cable"
     assert len(edges) == 1
     assert edges[0].source == "0"
