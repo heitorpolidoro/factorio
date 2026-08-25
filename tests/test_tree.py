@@ -86,15 +86,27 @@ def test_build_tree_marks_self_loop_as_cycle(conn):
     assert cycle_node.amount == 25.0
 
 
-def test_build_tree_direction_up(conn):
-    # iron-plate as an ingredient: the lowest recipe_id among its consumers is 16 (sulfuric-acid)
+def test_build_tree_direction_up_fans_out_every_candidate(conn):
+    # "up" candidates aren't alternative recipes for the same result — each
+    # one consumes iron-plate to make something different, so every one of
+    # them shows up as a direct child instead of picking just one default.
     tree = build_tree(conn, "iron-plate", "up")
-    assert tree.recipe_name == "sulfuric-acid"
-    assert tree.has_alternatives is True
-    assert len(tree.children) == 1
+    assert tree.recipe_name is None
+    assert tree.has_alternatives is False
+    assert len(tree.children) == 44
+    # recipe id 16 (sulfuric-acid) is the lowest id among iron-plate's
+    # consumers, so its result is the first child.
     assert tree.children[0].item_name == "sulfuric-acid"
     assert tree.children[0].kind == "fluid"
     assert tree.children[0].amount == 50.0
+
+
+def test_build_tree_direction_up_does_not_recurse_past_root(conn):
+    # Fanning out at every depth (not just the root) would explode
+    # combinatorially for a common item, so "up" nodes below the root stay
+    # as leaves even though several of them have their own consumers.
+    tree = build_tree(conn, "iron-plate", "up")
+    assert all(child.children == [] for child in tree.children)
 
 
 def test_find_node_by_id():
@@ -124,12 +136,32 @@ def test_get_candidate_recipes_excludes_hidden(conn):
     assert "express-loader" not in names
 
 
-def test_build_tree_up_default_excludes_hidden_recipe(conn):
-    # Before the fix, the lowest-id candidate was express-loader (id 152, hidden).
-    # After the fix, the lowest non-hidden id is turbo-transport-belt (id 267).
+def test_build_tree_up_excludes_hidden_recipe_result(conn):
+    # express-loader (id 152, hidden) must not contribute a child even under
+    # the "fan out every candidate" up-direction behavior.
     tree = build_tree(conn, "express-transport-belt", "up")
-    assert tree.recipe_name != "express-loader"
-    assert tree.recipe_name == "turbo-transport-belt"
+    names = [c.item_name for c in tree.children]
+    assert "express-loader" not in names
+    assert names == ["turbo-transport-belt"]
+
+
+def test_get_candidate_recipes_excludes_asteroid_crushing(conn):
+    # iron-ore/copper-ore are only ever "produced" in this dataset by asteroid
+    # crushing/reprocessing recipes (category "crushing") — excluding that
+    # category leaves them with no candidates at all, i.e. true raw-material
+    # leaves, instead of pulling in the asteroid-chunk cycle chain.
+    assert get_candidate_recipes(conn, "iron-ore", "down") == []
+    assert get_candidate_recipes(conn, "copper-ore", "down") == []
+
+
+def test_build_tree_leaf_for_ore_after_excluding_asteroid_recipes(conn):
+    tree = build_tree(conn, "electronic-circuit", "down")
+    iron_plate = next(c for c in tree.children if c.item_name == "iron-plate")
+    iron_ore = iron_plate.children[0]
+    assert iron_ore.item_name == "iron-ore"
+    assert iron_ore.children == []
+    assert iron_ore.recipe_name is None
+    assert iron_ore.is_cycle is False
 
 
 def test_resolve_recipe_id_override_present_in_candidates():

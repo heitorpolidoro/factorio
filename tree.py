@@ -52,6 +52,11 @@ def get_candidate_recipes(
         JOIN {join_table} j ON j.recipe_id = r.id
         WHERE j.name = ?
           AND (r.categories IS NULL OR r.categories NOT LIKE '%"recycling"%')
+          -- crushing = asteroid processing recipes (metallic/carbonic/oxide
+          -- asteroid crushing and reprocessing), excluded so raw materials
+          -- like iron-ore/copper-ore render as plain leaves instead of
+          -- pulling in the asteroid-chunk cycle chain.
+          AND (r.categories IS NULL OR r.categories NOT LIKE '%"crushing"%')
           -- hidden = map-editor/cheat-only recipes (e.g. loaders, infinity-chest),
           -- not craftable in normal play: exclude from candidates.
           -- NOTE: deliberately NOT filtering on `enabled` — 299/319 recipes have
@@ -116,21 +121,53 @@ def _expand(
     direction: Direction,
     overrides: dict[str, int],
     ancestors: set[str],
+    depth: int = 0,
 ) -> None:
     candidates = get_candidate_recipes(conn, node.item_name, direction)
-    node.has_alternatives = len(candidates) > 1
     if not candidates:
+        node.has_alternatives = False
         return
 
-    chosen_id = resolve_recipe_id(candidates, overrides, node.item_name)
-    chosen = next(c for c in candidates if c[0] == chosen_id)
-    recipe_id, recipe_name, pack = chosen
-    node.recipe_name = recipe_name
-    node.recipe_pack = pack
+    if direction == "down":
+        # Multiple candidates here are alternative recipes for producing the
+        # *same* result — mutually exclusive, so pick one (with override) and
+        # expand only its ingredients.
+        node.has_alternatives = len(candidates) > 1
+        chosen_id = resolve_recipe_id(candidates, overrides, node.item_name)
+        chosen = next(c for c in candidates if c[0] == chosen_id)
+        node.recipe_name, node.recipe_pack = chosen[1], chosen[2]
+        rows = _get_recipe_children_rows(conn, chosen[0], direction)
+        _add_children(conn, node, rows, direction, overrides, ancestors, depth)
+        return
 
-    rows = _get_recipe_children_rows(conn, recipe_id, direction)
-    for i, (child_name, child_kind, child_amount) in enumerate(rows):
-        child_node_id = f"{node.node_id}.{i}"
+    # direction == "up": each candidate recipe consumes this item to make a
+    # *different* product — these aren't alternatives for the same thing, so
+    # every candidate's results are shown as siblings instead of picking one.
+    node.has_alternatives = False
+    node.recipe_name = None
+    node.recipe_pack = None
+    if depth > 0:
+        # Only the root fans out. A common item (e.g. a basic circuit or
+        # plate) can be used by 50+ recipes, each cascading into dozens
+        # more — fanning out at every depth would explode combinatorially.
+        # Search one of the results directly to keep exploring from there.
+        return
+    for recipe_id, _, _ in candidates:
+        rows = _get_recipe_children_rows(conn, recipe_id, direction)
+        _add_children(conn, node, rows, direction, overrides, ancestors, depth)
+
+
+def _add_children(
+    conn: sqlite3.Connection,
+    node: TreeNode,
+    rows: list[tuple[str, str, float]],
+    direction: Direction,
+    overrides: dict[str, int],
+    ancestors: set[str],
+    depth: int,
+) -> None:
+    for child_name, child_kind, child_amount in rows:
+        child_node_id = f"{node.node_id}.{len(node.children)}"
         is_cycle = child_name in ancestors
         child = TreeNode(
             node_id=child_node_id,
@@ -144,7 +181,7 @@ def _expand(
         )
         node.children.append(child)
         if not is_cycle:
-            _expand(conn, child, direction, overrides, ancestors | {child_name})
+            _expand(conn, child, direction, overrides, ancestors | {child_name}, depth + 1)
 
 
 def find_node_by_id(node: TreeNode, node_id: str) -> Optional[TreeNode]:

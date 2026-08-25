@@ -61,7 +61,10 @@ config = Config(width=900, height=750, directed=True, physics=False, hierarchica
 # library also copies every kwarg onto the top-level config object, which
 # vis.js's options validator then flags as an "unknown option" (it only
 # recognizes these nested under layout.hierarchical).
-config.layout["hierarchical"]["direction"] = "DU"  # root at the bottom, tree grows upward toward raw materials
+
+# "down" (what I need): root at the bottom, ingredients pile up above it.
+# "up" (what I can make): root at the top, derived products cascade below it.
+config.layout["hierarchical"]["direction"] = "DU" if direction == "down" else "UD"
 config.layout["hierarchical"]["sortMethod"] = "directed"  # rank by edge direction (parent -> child), not node degree
 clicked_node_id = agraph(nodes=nodes, edges=edges, config=config)
 
@@ -70,7 +73,10 @@ if clicked_node_id:
     if clicked_node:
         st.session_state.selected_node_item = clicked_node.item_name
 
-if st.session_state.selected_node_item:
+if st.session_state.selected_node_item and direction == "down":
+    # Only "down" nodes have a single chosen recipe to override — in "up"
+    # mode every candidate recipe is already shown as a separate branch
+    # (see tree.py), so there's nothing to pick between.
     item_name = st.session_state.selected_node_item
     candidates = get_candidate_recipes(conn, item_name, direction)
     if len(candidates) > 1:
