@@ -64,6 +64,10 @@ if direction == "down":
     # only recognizes these nested under layout.hierarchical).
     config.layout["hierarchical"]["direction"] = "RL"  # root on the right, ingredients fan out to the left
     config.layout["hierarchical"]["sortMethod"] = "directed"  # rank by edge direction (parent -> child), not node degree
+    # Shared nodes (e.g. water, holmium-ore) can accumulate many converging
+    # edges — extra spacing gives their labels and lines room to not overlap.
+    config.layout["hierarchical"]["nodeSpacing"] = 180
+    config.layout["hierarchical"]["levelSeparation"] = 220
     clicked_node_id = agraph(nodes=nodes, edges=edges, config=config)
 
     if clicked_node_id and clicked_node_id in graph.nodes:

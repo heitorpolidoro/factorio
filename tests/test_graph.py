@@ -39,6 +39,10 @@ def test_graph_to_agraph_root_and_child(tmp_path, monkeypatch):
     assert edges[0].source == "electronic-circuit"
     assert edges[0].to == "copper-cable"
     assert edges[0].label == "×3"
+    # source/target still encode parent -> ingredient (for the hierarchical
+    # layout's ranking), but the arrowhead is drawn at the "from" end so it
+    # visually points ingredient -> product instead.
+    assert edges[0].arrows == "from"
 
 
 def test_graph_to_agraph_cycle_edge_is_marked(tmp_path, monkeypatch):

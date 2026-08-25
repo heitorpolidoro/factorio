@@ -45,7 +45,16 @@ def _make_edge(edge: ProductionEdge) -> Edge:
     else:
         label = ""
 
-    kwargs = {"source": edge.source, "target": edge.target, "label": label}
+    kwargs = {
+        "source": edge.source,
+        "target": edge.target,
+        "label": label,
+        # source/target still encode parent -> ingredient (needed for the
+        # hierarchical layout's edge-direction ranking), but the arrowhead
+        # is drawn at the "from" end so it visually points ingredient ->
+        # product instead — matches how a crafting chain reads.
+        "arrows": "from",
+    }
     if edge.is_cycle:
         # Closes a loop back to an ancestor instead of a normal ingredient
         # edge — call that out visually rather than let it look identical
