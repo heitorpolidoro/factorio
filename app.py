@@ -57,6 +57,12 @@ tree = build_tree(conn, root_item, direction, st.session_state.recipe_overrides)
 nodes, edges = tree_to_agraph(tree)
 
 config = Config(width=900, height=750, directed=True, physics=False, hierarchical=True)
+# Set directly on the nested layout dict rather than via Config(**kwargs): the
+# library also copies every kwarg onto the top-level config object, which
+# vis.js's options validator then flags as an "unknown option" (it only
+# recognizes these nested under layout.hierarchical).
+config.layout["hierarchical"]["direction"] = "DU"  # root at the bottom, tree grows upward toward raw materials
+config.layout["hierarchical"]["sortMethod"] = "directed"  # rank by edge direction (parent -> child), not node degree
 clicked_node_id = agraph(nodes=nodes, edges=edges, config=config)
 
 if clicked_node_id:
