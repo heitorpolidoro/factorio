@@ -1,4 +1,0 @@
-streamlit==1.62.0
-streamlit-agraph==0.0.45
-pillow==12.3.0
-pytest==9.1.1
