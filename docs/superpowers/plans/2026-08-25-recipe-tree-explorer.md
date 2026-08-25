@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Projeto sem git — nenhum passo de commit; cada task termina em "rode os testes e confirme que passam".
+- Git foi inicializado depois da spec ter sido escrita, especificamente para esta implementação (execução via subagent-driven-development, que exige commits por task). Cada task termina com um commit, como de costume nesse fluxo — a menção original a "sem git" valia para a fase de design, não para a implementação.
 - App é um único processo (`streamlit run app.py`), sem servidor adicional.
 - Sem limite de profundidade na árvore.
 - Receitas com categoria `recycling` são sempre excluídas das candidatas.
