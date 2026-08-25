@@ -199,3 +199,36 @@ def list_all_item_names(conn: sqlite3.Connection) -> list[str]:
         "SELECT name FROM ingredients UNION SELECT name FROM results ORDER BY name"
     ).fetchall()
     return [row[0] for row in rows]
+
+
+def find_end_products(conn: sqlite3.Connection, root_item: str) -> list[str]:
+    """Items reachable from root_item via "up" recipes (things it eventually
+    helps make, transitively) that are never themselves used as an ingredient
+    in anything further — i.e. true end products, not intermediate steps.
+
+    Standard graph reachability (a single global `visited` set), not a tree
+    walk: the same item is commonly reachable through many different paths,
+    and a plain visited set naturally terminates on cycles too, since a
+    revisited item is simply skipped rather than re-expanded.
+    """
+    visited: set[str] = set()
+    end_products: set[str] = set()
+    queue: list[str] = [root_item]
+
+    while queue:
+        item_name = queue.pop()
+        if item_name in visited:
+            continue
+        visited.add(item_name)
+
+        candidates = get_candidate_recipes(conn, item_name, "up")
+        if not candidates:
+            end_products.add(item_name)
+            continue
+
+        for recipe_id, _, _ in candidates:
+            for child_name, _, _ in _get_recipe_children_rows(conn, recipe_id, "up"):
+                if child_name not in visited:
+                    queue.append(child_name)
+
+    return sorted(end_products)

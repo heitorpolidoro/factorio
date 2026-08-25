@@ -5,6 +5,7 @@ import pytest
 
 from tree import (
     build_tree,
+    find_end_products,
     find_node_by_id,
     get_candidate_recipes,
     get_item_kind,
@@ -183,3 +184,33 @@ def test_resolve_recipe_id_override_absent_falls_back_to_default():
 def test_resolve_recipe_id_no_override_falls_back_to_default():
     candidates = [(10, "recipe-a", "base"), (20, "recipe-b", "space-age")]
     assert resolve_recipe_id(candidates, {}, "widget") == 10
+
+
+def test_find_end_products_item_with_no_further_use_is_its_own_end_product(conn):
+    # rocket-silo is never itself used as an ingredient in anything.
+    assert find_end_products(conn, "rocket-silo") == ["rocket-silo"]
+
+
+def test_find_end_products_transitive_and_deduplicated(conn):
+    # uranium-238 feeds into several chains (nuclear fuel, weapons, science,
+    # etc.) that all terminate in a small, exact set of end products.
+    assert find_end_products(conn, "uranium-238") == [
+        "atomic-bomb",
+        "biolab",
+        "captive-biter-spawner",
+        "explosive-uranium-cannon-shell",
+        "fusion-reactor-equipment",
+        "nuclear-fuel",
+        "spidertron",
+        "uranium-cannon-shell",
+        "uranium-rounds-magazine",
+    ]
+
+
+def test_find_end_products_terminates_on_cycles(conn):
+    # heavy-oil's own "up" chain loops back on itself (e.g. via
+    # coal-liquefaction, which both consumes and produces heavy-oil) — this
+    # must terminate instead of looping forever, and still find real
+    # end products beyond the cycle.
+    products = find_end_products(conn, "heavy-oil")
+    assert len(products) > 0
