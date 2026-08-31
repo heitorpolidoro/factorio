@@ -366,6 +366,103 @@
   }
   .top-bar .hint { display: flex; gap: 14px; }
 
+  .direction-option.static { cursor: default; }
+  .direction-option.static:hover { border-color: var(--border-strong); }
+
+  .planning-view { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .planning-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 720px;
+  }
+  .planning-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .planning-row.imported { border-style: dashed; opacity: 0.75; }
+  .planning-pos {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    width: 26px;
+    flex-shrink: 0;
+  }
+  .planning-icon { width: 28px; height: 28px; flex-shrink: 0; image-rendering: pixelated; }
+  .planning-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .planning-recipe-select {
+    background: var(--bg-inset);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 5px 7px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    max-width: 200px;
+    flex-shrink: 0;
+  }
+  .planning-distance {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    background: var(--bg-inset);
+    padding: 3px 8px;
+    border-radius: var(--radius);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .planning-distance.high { color: var(--accent-strong); background: var(--accent-soft); }
+  .planning-import-btn {
+    border: 1px solid var(--border-strong);
+    background: var(--bg-inset);
+    border-radius: var(--radius);
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .planning-import-btn:hover { border-color: var(--accent); }
+  .planning-import-btn.active { background: var(--accent-soft); border-color: var(--accent); }
+
+  .fluids-section { margin-top: 26px; max-width: 720px; }
+  .fluids-section h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 15px;
+    margin: 0 0 10px;
+    color: var(--text-muted);
+  }
+  .fluids-list { display: flex; flex-direction: column; gap: 6px; }
+  .fluid-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    background: var(--bg-inset);
+    border-radius: var(--radius);
+  }
+  .fluid-row .planning-name { flex: 0 0 auto; }
+  .fluid-consumers {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
@@ -387,6 +484,18 @@
     <div class="current-item" id="current-item"></div>
 
     <div>
+      <span class="field-label">Mode</span>
+      <div class="direction-group">
+        <div class="direction-option" id="mode-query" data-mode="query">
+          <span>Recipe query</span>
+        </div>
+        <div class="direction-option" id="mode-planning" data-mode="planning">
+          <span>Planning</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="query-controls">
       <span class="field-label">Direction</span>
       <div class="direction-group">
         <div class="direction-option" id="dir-down" data-dir="down">
@@ -394,6 +503,15 @@
         </div>
         <div class="direction-option" id="dir-up" data-dir="up">
           <span class="arrow">&darr;</span><span>what I can make</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="planning-controls" style="display:none">
+      <span class="field-label">Planning</span>
+      <div class="direction-group">
+        <div class="direction-option active static">
+          <span>Production line</span>
         </div>
       </div>
     </div>
@@ -446,6 +564,18 @@
         <span class="list-count" id="list-count"></span>
       </div>
       <div class="product-grid" id="product-grid"></div>
+    </div>
+
+    <div class="planning-view" id="planning-view" style="display:none">
+      <div class="list-header">
+        <h2 id="planning-title"></h2>
+        <span class="list-count" id="planning-count"></span>
+      </div>
+      <div class="planning-list" id="planning-list"></div>
+      <div class="fluids-section" id="fluids-section" style="display:none">
+        <h3>Fluids needed</h3>
+        <div class="fluids-list" id="fluids-list"></div>
+      </div>
     </div>
   </main>
 </div>
@@ -555,6 +685,116 @@
     return { root: rootItem, nodes: nodes, edges: edges };
   }
 
+  // Planning mode: like buildDownGraph, but a fluid or an item marked as
+  // "imported" is always a leaf — its own ingredients are never expanded,
+  // even if it has a real recipe. Fluids never enter the ordered production
+  // line at all (handled separately, see computePlanningOrder).
+  function buildPlanningGraph(rootItem, overrides, imports) {
+    const nodes = new Map();
+    const edges = [];
+
+    function expand(itemName, ancestors) {
+      const candidates = getCandidateRecipes(itemName, "down");
+      const node = {
+        item_name: itemName,
+        kind: getItemKind(itemName),
+        recipe_name: null,
+        recipe_pack: null,
+        has_alternatives: candidates.length > 1,
+        is_imported: imports.has(itemName)
+      };
+      nodes.set(itemName, node);
+      if (candidates.length === 0 || imports.has(itemName)) return;
+      const chosenId = resolveRecipeId(candidates, overrides, itemName);
+      const chosen = candidates.find(function (c) { return c.id === chosenId; });
+      node.recipe_name = chosen.name;
+      node.recipe_pack = chosen.pack;
+      const rows = getRecipeChildRows(chosen.id, "down");
+      for (const row of rows) {
+        const childName = row.name;
+        const isCycle = ancestors.has(childName);
+        const alreadyBuilt = nodes.has(childName);
+        edges.push({ source: itemName, target: childName, amount: row.amount, is_cycle: isCycle });
+        if (row.kind === "fluid") {
+          if (!nodes.has(childName)) {
+            nodes.set(childName, { item_name: childName, kind: "fluid", recipe_name: null, recipe_pack: null, has_alternatives: false, is_imported: false });
+          }
+          continue;
+        }
+        if (!alreadyBuilt && !isCycle) {
+          const nextAncestors = new Set(ancestors);
+          nextAncestors.add(childName);
+          expand(childName, nextAncestors);
+        }
+      }
+    }
+    expand(rootItem, new Set([rootItem]));
+    return { root: rootItem, nodes: nodes, edges: edges };
+  }
+
+  function getItemKind(itemName) {
+    const row = (resultRowsByItem.get(itemName) || [])[0] || (ingredientRowsByItem.get(itemName) || [])[0];
+    return row ? row.kind : "item";
+  }
+
+  // Longest-path rank from the root (0 = root), following non-cycle edges.
+  // Used both for graph-layout columns and planning-line ordering.
+  function computeRanks(graph) {
+    const rank = new Map();
+    rank.set(graph.root, 0);
+    const names = Array.from(graph.nodes.keys());
+    for (let pass = 0; pass <= names.length; pass++) {
+      let changed = false;
+      for (const e of graph.edges) {
+        if (e.is_cycle) continue;
+        const sourceRank = rank.has(e.source) ? rank.get(e.source) : 0;
+        const proposed = sourceRank + 1;
+        if (!rank.has(e.target) || rank.get(e.target) < proposed) {
+          rank.set(e.target, proposed);
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    return rank;
+  }
+
+  // Builds the ordered production line: items sorted deepest-first
+  // (descending rank, ties broken by first-encountered order — a stable
+  // sort over the graph's insertion-ordered node list), plus each item's
+  // "gap" to the position of its farthest-away consumer, and the separate
+  // (unordered) list of fluids the line depends on.
+  function computePlanningOrder(graph) {
+    const rank = computeRanks(graph);
+    const items = Array.from(graph.nodes.values()).filter(function (n) { return n.kind !== "fluid"; });
+    items.sort(function (a, b) {
+      return (rank.get(b.item_name) || 0) - (rank.get(a.item_name) || 0);
+    });
+    const position = new Map();
+    items.forEach(function (n, i) { position.set(n.item_name, i); });
+
+    const distances = new Map();
+    items.forEach(function (n) {
+      const consumerPositions = graph.edges
+        .filter(function (e) { return e.target === n.item_name && !e.is_cycle && position.has(e.source); })
+        .map(function (e) { return position.get(e.source); });
+      if (consumerPositions.length === 0) {
+        distances.set(n.item_name, null);
+      } else {
+        distances.set(n.item_name, Math.max.apply(null, consumerPositions) - position.get(n.item_name) - 1);
+      }
+    });
+
+    const fluids = Array.from(graph.nodes.values()).filter(function (n) { return n.kind === "fluid"; });
+    const fluidConsumers = new Map();
+    fluids.forEach(function (f) {
+      const consumers = graph.edges.filter(function (e) { return e.target === f.item_name; }).map(function (e) { return e.source; });
+      fluidConsumers.set(f.item_name, consumers);
+    });
+
+    return { items: items, distances: distances, fluids: fluids, fluidConsumers: fluidConsumers };
+  }
+
   function findEndProducts(rootItem) {
     const visited = new Set();
     const endProducts = new Set();
@@ -577,22 +817,8 @@
   // ---- Layout ----
 
   function computeLayout(graph) {
-    const rank = new Map();
-    rank.set(graph.root, 0);
+    const rank = computeRanks(graph);
     const names = Array.from(graph.nodes.keys());
-    for (let pass = 0; pass <= names.length; pass++) {
-      let changed = false;
-      for (const e of graph.edges) {
-        if (e.is_cycle) continue;
-        const sourceRank = rank.has(e.source) ? rank.get(e.source) : 0;
-        const proposed = sourceRank + 1;
-        if (!rank.has(e.target) || rank.get(e.target) < proposed) {
-          rank.set(e.target, proposed);
-          changed = true;
-        }
-      }
-      if (!changed) break;
-    }
     let maxRank = 0;
     rank.forEach(function (r) { if (r > maxRank) maxRank = r; });
 
@@ -625,8 +851,10 @@
 
   const state = {
     rootItem: "electronic-circuit",
+    mode: "query",
     direction: "down",
     overrides: {},
+    imports: new Set(),
     selectedItem: null,
     view: { x: 0, y: 0, scale: 1 }
   };
@@ -636,6 +864,10 @@
   const searchInput = document.getElementById("search-input");
   const searchResults = document.getElementById("search-results");
   const currentItemEl = document.getElementById("current-item");
+  const modeQuery = document.getElementById("mode-query");
+  const modePlanning = document.getElementById("mode-planning");
+  const queryControls = document.getElementById("query-controls");
+  const planningControls = document.getElementById("planning-controls");
   const dirDown = document.getElementById("dir-down");
   const dirUp = document.getElementById("dir-up");
   const graphView = document.getElementById("graph-view");
@@ -648,6 +880,12 @@
   const listTitle = document.getElementById("list-title");
   const listCount = document.getElementById("list-count");
   const productGrid = document.getElementById("product-grid");
+  const planningView = document.getElementById("planning-view");
+  const planningTitle = document.getElementById("planning-title");
+  const planningCount = document.getElementById("planning-count");
+  const planningList = document.getElementById("planning-list");
+  const fluidsSection = document.getElementById("fluids-section");
+  const fluidsList = document.getElementById("fluids-list");
   const topBarLabel = document.getElementById("top-bar-label");
   const topBarHint = document.getElementById("top-bar-hint");
 
@@ -689,6 +927,7 @@
 
   function renderGraph() {
     listView.style.display = "none";
+    planningView.style.display = "none";
     graphView.style.display = "block";
     sidePanel.classList.remove("open");
     state.selectedItem = null;
@@ -830,6 +1069,7 @@
 
   function renderList() {
     graphView.style.display = "none";
+    planningView.style.display = "none";
     sidePanel.classList.remove("open");
     listView.style.display = "block";
 
@@ -873,15 +1113,142 @@
     topBarHint.textContent = "click an item to explore from there · double-click to see what it needs";
   }
 
+  function renderPlanning() {
+    graphView.style.display = "none";
+    listView.style.display = "none";
+    sidePanel.classList.remove("open");
+    planningView.style.display = "block";
+
+    const graph = buildPlanningGraph(state.rootItem, state.overrides, state.imports);
+    const order = computePlanningOrder(graph);
+
+    planningTitle.textContent = "Production line for " + state.rootItem;
+    planningCount.textContent = order.items.length + " item" + (order.items.length === 1 ? "" : "s");
+
+    planningList.innerHTML = "";
+    order.items.forEach(function (node, i) {
+      const row = document.createElement("div");
+      row.className = "planning-row" + (node.is_imported ? " imported" : "");
+
+      const pos = document.createElement("span");
+      pos.className = "planning-pos";
+      pos.textContent = "#" + (i + 1);
+      row.appendChild(pos);
+
+      const img = document.createElement("img");
+      img.className = "planning-icon";
+      img.src = iconSrc(node.item_name);
+      img.alt = "";
+      row.appendChild(img);
+
+      const name = document.createElement("span");
+      name.className = "planning-name";
+      name.textContent = node.item_name;
+      row.appendChild(name);
+
+      if (node.has_alternatives && !node.is_imported) {
+        const candidates = getCandidateRecipes(node.item_name, "down");
+        const select = document.createElement("select");
+        select.className = "planning-recipe-select";
+        const currentId = resolveRecipeId(candidates, state.overrides, node.item_name);
+        candidates.forEach(function (recipe) {
+          const opt = document.createElement("option");
+          opt.value = String(recipe.id);
+          opt.textContent = recipe.name + " (" + recipe.pack + ")";
+          opt.selected = recipe.id === currentId;
+          select.appendChild(opt);
+        });
+        select.addEventListener("change", function () {
+          state.overrides[node.item_name] = parseInt(select.value, 10);
+          renderPlanning();
+        });
+        row.appendChild(select);
+      }
+
+      const dist = order.distances.get(node.item_name);
+      const distBadge = document.createElement("span");
+      distBadge.className = "planning-distance" + (dist !== null && dist >= 3 ? " high" : "");
+      distBadge.textContent = dist === null ? "final" : "gap " + dist;
+      row.appendChild(distBadge);
+
+      const importBtn = document.createElement("button");
+      importBtn.className = "planning-import-btn" + (node.is_imported ? " active" : "");
+      importBtn.title = node.is_imported
+        ? "Imported — click to build it locally instead"
+        : "Mark as imported (skip its own ingredients)";
+      importBtn.textContent = "\u{1F680}";
+      importBtn.addEventListener("click", function () {
+        if (state.imports.has(node.item_name)) {
+          state.imports.delete(node.item_name);
+        } else {
+          state.imports.add(node.item_name);
+        }
+        renderPlanning();
+      });
+      row.appendChild(importBtn);
+
+      planningList.appendChild(row);
+    });
+
+    if (order.fluids.length > 0) {
+      fluidsSection.style.display = "block";
+      fluidsList.innerHTML = "";
+      order.fluids.forEach(function (f) {
+        const row = document.createElement("div");
+        row.className = "fluid-row";
+        const img = document.createElement("img");
+        img.className = "planning-icon";
+        img.src = iconSrc(f.item_name);
+        img.alt = "";
+        const name = document.createElement("span");
+        name.className = "planning-name";
+        name.textContent = f.item_name;
+        const consumers = order.fluidConsumers.get(f.item_name) || [];
+        const note = document.createElement("span");
+        note.className = "fluid-consumers";
+        note.textContent = "needed by " + consumers.join(", ");
+        row.appendChild(img);
+        row.appendChild(name);
+        row.appendChild(note);
+        fluidsList.appendChild(row);
+      });
+    } else {
+      fluidsSection.style.display = "none";
+    }
+
+    topBarLabel.textContent = "⚙ planning · production line · " + order.items.length + " items";
+    topBarHint.textContent = "\u{1F680} marks an item as imported, skipping its own ingredients";
+  }
+
+  function renderModeButtons() {
+    modeQuery.classList.toggle("active", state.mode === "query");
+    modePlanning.classList.toggle("active", state.mode === "planning");
+    queryControls.style.display = state.mode === "query" ? "" : "none";
+    planningControls.style.display = state.mode === "planning" ? "" : "none";
+  }
+
   function render() {
     renderCurrentItem();
-    renderDirectionButtons();
-    if (state.direction === "down") {
-      renderGraph();
+    renderModeButtons();
+    if (state.mode === "planning") {
+      renderPlanning();
     } else {
-      renderList();
+      renderDirectionButtons();
+      if (state.direction === "down") {
+        renderGraph();
+      } else {
+        renderList();
+      }
     }
   }
+
+  function setMode(mode) {
+    state.mode = mode;
+    render();
+  }
+
+  modeQuery.addEventListener("click", function () { setMode("query"); });
+  modePlanning.addEventListener("click", function () { setMode("planning"); });
 
   function setRootItem(name) {
     if (!RAW.item_names.includes(name)) return;
