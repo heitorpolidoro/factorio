@@ -760,15 +760,26 @@
   }
 
   // Builds the ordered production line: items sorted deepest-first
-  // (descending rank, ties broken by first-encountered order — a stable
-  // sort over the graph's insertion-ordered node list), plus each item's
-  // "gap" to the position of its farthest-away consumer, and the separate
-  // (unordered) list of fluids the line depends on.
+  // (descending rank). Within a tie, an item consumed in only one place is
+  // sorted after an item consumed in several — the single-consumer item can
+  // actually land adjacent to its consumer (gap 0), while a multi-consumer
+  // item is stuck with a nonzero gap no matter where it sits (it always has
+  // to be carried forward to its farthest use), so it doesn't lose anything
+  // by yielding the tight slot. Remaining ties fall back to first-encountered
+  // order — a stable sort over the graph's insertion-ordered node list.
+  // Each item's "gap" is measured to its farthest-away consumer, and fluids
+  // are reported separately (see below), not part of this ordered line.
   function computePlanningOrder(graph) {
     const rank = computeRanks(graph);
     const items = Array.from(graph.nodes.values()).filter(function (n) { return n.kind !== "fluid"; });
+    const consumerCount = new Map();
+    items.forEach(function (n) {
+      consumerCount.set(n.item_name, graph.edges.filter(function (e) { return e.target === n.item_name && !e.is_cycle; }).length);
+    });
     items.sort(function (a, b) {
-      return (rank.get(b.item_name) || 0) - (rank.get(a.item_name) || 0);
+      const rankDiff = (rank.get(b.item_name) || 0) - (rank.get(a.item_name) || 0);
+      if (rankDiff !== 0) return rankDiff;
+      return (consumerCount.get(b.item_name) || 0) - (consumerCount.get(a.item_name) || 0);
     });
     const position = new Map();
     items.forEach(function (n, i) { position.set(n.item_name, i); });
