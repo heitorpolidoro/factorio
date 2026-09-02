@@ -463,6 +463,151 @@
     color: var(--text-faint);
   }
 
+  
+  .inventory-section { display: flex; flex-direction: column; gap: 8px; }
+  .inventory-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+  .preset-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 6px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent-strong); }
+  .inventory-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 140px;
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .inventory-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+  }
+  .inventory-chip img { width: 14px; height: 14px; image-rendering: pixelated; }
+  .inventory-chip button {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0 2px;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .inventory-chip button:hover { color: var(--red); }
+
+  .craft-view { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .craft-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .craft-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .craft-card:hover { border-color: var(--accent); }
+  .craft-card-header { display: flex; align-items: center; gap: 10px; }
+  .craft-card-icon { width: 36px; height: 36px; image-rendering: pixelated; flex-shrink: 0; }
+  .craft-card-title { flex: 1; min-width: 0; }
+  .craft-card-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .craft-card-recipe { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+  .craft-card-ings { display: flex; flex-wrap: wrap; gap: 5px; }
+  .craft-ing-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .craft-ing-badge img { width: 14px; height: 14px; image-rendering: pixelated; }
+  .craft-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .craft-add-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 8px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .craft-add-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+  }
+  .missing-section { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+  .missing-header {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .missing-list { display: flex; flex-direction: column; gap: 6px; }
+  .missing-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
@@ -487,7 +632,7 @@
       <span class="field-label">Mode</span>
       <div class="direction-group">
         <div class="direction-option" id="mode-query" data-mode="query">
-          <span>Recipe query</span>
+          <span>Recipe</span>
         </div>
         <div class="direction-option" id="mode-planning" data-mode="planning">
           <span>Planning</span>
@@ -504,7 +649,24 @@
         <div class="direction-option" id="dir-up" data-dir="up">
           <span class="arrow">&darr;</span><span>what I can make</span>
         </div>
+        <div class="direction-option" id="dir-craft" data-dir="craft">
+          <span class="arrow">&#10022;</span><span>what I can craft</span>
+        </div>
       </div>
+    </div>
+
+    <div id="inventory-controls" class="inventory-section" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="field-label">My Inventory (<span id="inv-count">0</span>)</span>
+        <button id="inv-clear-btn" class="preset-btn" style="color:var(--red); border-color:var(--red-soft);">Clear</button>
+      </div>
+      <div class="inventory-presets">
+        <button class="preset-btn" onclick="applyInvPreset('raw')">Raw</button>
+        <button class="preset-btn" onclick="applyInvPreset('plates')">Plates</button>
+        <button class="preset-btn" onclick="applyInvPreset('circuits')">Circuits</button>
+        <button class="preset-btn" onclick="applyInvPreset('starter')">Starter</button>
+      </div>
+      <div class="inventory-chips" id="inventory-chips"></div>
     </div>
 
     <div id="planning-controls" style="display:none">
@@ -575,6 +737,21 @@
       <div class="fluids-section" id="fluids-section" style="display:none">
         <h3>Fluids needed</h3>
         <div class="fluids-list" id="fluids-list"></div>
+      </div>
+    </div>
+
+    <div class="craft-view" id="craft-view" style="display:none">
+      <div class="list-header">
+        <h2 id="craft-title">Items you can directly craft</h2>
+        <span class="list-count" id="craft-count"></span>
+      </div>
+      <div class="craft-grid" id="craft-grid"></div>
+      <div class="missing-section">
+        <div class="missing-header" id="missing-header" onclick="toggleMissingSection()">
+          <span>Almost craftable (missing 1 ingredient) (<span id="missing-count">0</span>)</span>
+          <span id="missing-arrow">&#9662;</span>
+        </div>
+        <div class="missing-list" id="missing-list" style="display:none"></div>
       </div>
     </div>
   </main>
@@ -864,6 +1041,7 @@
     rootItem: "electronic-circuit",
     mode: "query",
     direction: "down",
+    inventory: new Set(["iron-plate", "copper-plate", "copper-cable"]),
     overrides: {},
     imports: new Set(),
     selectedItem: null,
@@ -881,6 +1059,19 @@
   const planningControls = document.getElementById("planning-controls");
   const dirDown = document.getElementById("dir-down");
   const dirUp = document.getElementById("dir-up");
+  const dirCraft = document.getElementById("dir-craft");
+  const inventoryControls = document.getElementById("inventory-controls");
+  const inventoryChips = document.getElementById("inventory-chips");
+  const invCount = document.getElementById("inv-count");
+  const invClearBtn = document.getElementById("inv-clear-btn");
+  const craftView = document.getElementById("craft-view");
+  const craftTitle = document.getElementById("craft-title");
+  const craftCount = document.getElementById("craft-count");
+  const craftGrid = document.getElementById("craft-grid");
+  const missingHeader = document.getElementById("missing-header");
+  const missingCount = document.getElementById("missing-count");
+  const missingList = document.getElementById("missing-list");
+  const missingArrow = document.getElementById("missing-arrow");
   const graphView = document.getElementById("graph-view");
   const svg = document.getElementById("graph-svg");
   const viewport = document.getElementById("viewport");
@@ -917,6 +1108,7 @@
   function renderDirectionButtons() {
     dirDown.classList.toggle("active", state.direction === "down");
     dirUp.classList.toggle("active", state.direction === "up");
+    dirCraft.classList.toggle("active", state.direction === "craft");
   }
 
   function fitView(width, height) {
@@ -1238,6 +1430,206 @@
     planningControls.style.display = state.mode === "planning" ? "" : "none";
   }
 
+  function renderInventoryChips() {
+    if (!inventoryChips) return;
+    invCount.textContent = state.inventory.size;
+    inventoryChips.innerHTML = "";
+    if (state.inventory.size === 0) {
+      inventoryChips.innerHTML = '<span style="font-size:11px; color:var(--text-faint); font-family:var(--font-mono);">No items selected. Search or click presets above.</span>';
+      return;
+    }
+    const items = Array.from(state.inventory).sort();
+    items.forEach(function (name) {
+      const chip = document.createElement("div");
+      chip.className = "inventory-chip";
+      const img = document.createElement("img");
+      img.src = iconSrc(name);
+      img.alt = "";
+      const span = document.createElement("span");
+      span.textContent = name;
+      const btn = document.createElement("button");
+      btn.textContent = "×";
+      btn.title = "Remove " + name;
+      btn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        state.inventory.delete(name);
+        render();
+      });
+      chip.appendChild(img);
+      chip.appendChild(span);
+      chip.appendChild(btn);
+      inventoryChips.appendChild(chip);
+    });
+  }
+
+  window.applyInvPreset = function(type) {
+    if (type === 'raw') {
+      RAW_MATERIALS.forEach(function(i) { state.inventory.add(i); });
+    } else if (type === 'plates') {
+      ['iron-plate', 'copper-plate', 'steel-plate', 'copper-cable', 'plastic-bar'].forEach(function(i) { state.inventory.add(i); });
+    } else if (type === 'circuits') {
+      ['electronic-circuit', 'advanced-circuit', 'processing-unit'].forEach(function(i) { state.inventory.add(i); });
+    } else if (type === 'starter') {
+      state.inventory.clear();
+      ['iron-plate', 'copper-plate', 'copper-cable'].forEach(function(i) { state.inventory.add(i); });
+    }
+    render();
+  };
+
+  window.toggleMissingSection = function() {
+    const isHidden = missingList.style.display === "none";
+    missingList.style.display = isHidden ? "flex" : "none";
+    missingArrow.innerHTML = isHidden ? "&#9652;" : "&#9662;";
+  };
+
+  function renderCraft() {
+    graphView.style.display = "none";
+    listView.style.display = "none";
+    planningView.style.display = "none";
+    sidePanel.classList.remove("open");
+    craftView.style.display = "block";
+
+    renderInventoryChips();
+
+    // Find fully craftable recipes
+    const fullyCraftable = [];
+    const missingOne = [];
+
+    RAW.recipes.forEach(function (recipe) {
+      if (recipe.hidden) return;
+      if (recipe.categories.includes("recycling")) return;
+      if (recipe.categories.includes("crushing")) return;
+
+      const ings = getRecipeChildRows(recipe.id, "down");
+      if (ings.length === 0) return;
+
+      const reqNames = ings.map(function (i) { return i.name; });
+      const missing = reqNames.filter(function (name) { return !state.inventory.has(name); });
+
+      if (missing.length === 0) {
+        fullyCraftable.push({ recipe: recipe, ingredients: ings });
+      } else if (missing.length === 1) {
+        missingOne.push({ recipe: recipe, ingredients: ings, missingItem: missing[0] });
+      }
+    });
+
+    craftTitle.textContent = "Items you can directly craft (" + fullyCraftable.length + ")";
+    craftCount.textContent = state.inventory.size + " item" + (state.inventory.size === 1 ? "" : "s") + " in inventory";
+
+    craftGrid.innerHTML = "";
+    if (fullyCraftable.length === 0) {
+      craftGrid.innerHTML = '<div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--text-faint); font-family: var(--font-mono); border: 1px dashed var(--border-strong); border-radius: var(--radius);">No items can be directly crafted with your current inventory. Add more items using search or presets on the left.</div>';
+    } else {
+      fullyCraftable.forEach(function (item) {
+        const rec = item.recipe;
+        const ings = item.ingredients;
+        const results = getRecipeChildRows(rec.id, "up");
+        const mainResultName = results.length > 0 ? results[0].name : rec.name;
+
+        const card = document.createElement("div");
+        card.className = "craft-card";
+
+        const header = document.createElement("div");
+        header.className = "craft-card-header";
+        const img = document.createElement("img");
+        img.className = "craft-card-icon";
+        img.src = iconSrc(mainResultName);
+        img.alt = "";
+
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "craft-card-title";
+        const nameEl = document.createElement("div");
+        nameEl.className = "craft-card-name";
+        nameEl.textContent = results.map(function(r) { return r.name + (r.amount > 1 ? " ×" + r.amount : ""); }).join(", ");
+        const recName = document.createElement("div");
+        recName.className = "craft-card-recipe";
+        recName.textContent = rec.name + " (" + rec.pack + ")";
+        titleWrap.appendChild(nameEl);
+        titleWrap.appendChild(recName);
+        header.appendChild(img);
+        header.appendChild(titleWrap);
+
+        const ingsWrap = document.createElement("div");
+        ingsWrap.className = "craft-card-ings";
+        ings.forEach(function (ing) {
+          const badge = document.createElement("div");
+          badge.className = "craft-ing-badge";
+          const ingImg = document.createElement("img");
+          ingImg.src = iconSrc(ing.name);
+          ingImg.alt = "";
+          const ingSpan = document.createElement("span");
+          ingSpan.textContent = ing.name + " ×" + ing.amount;
+          badge.appendChild(ingImg);
+          badge.appendChild(ingSpan);
+          ingsWrap.appendChild(badge);
+        });
+
+        const footer = document.createElement("div");
+        footer.className = "craft-card-footer";
+        const catSpan = document.createElement("span");
+        catSpan.textContent = rec.categories.join(", ") || "crafting";
+        const addBtn = document.createElement("button");
+        addBtn.className = "craft-add-btn";
+        addBtn.textContent = "+ Add result to inventory";
+        addBtn.addEventListener("click", function () {
+          results.forEach(function(r) { state.inventory.add(r.name); });
+          render();
+        });
+        footer.appendChild(catSpan);
+        footer.appendChild(addBtn);
+
+        card.appendChild(header);
+        card.appendChild(ingsWrap);
+        card.appendChild(footer);
+        craftGrid.appendChild(card);
+      });
+    }
+
+    missingCount.textContent = String(missingOne.length);
+    missingList.innerHTML = "";
+    missingOne.forEach(function (item) {
+      const rec = item.recipe;
+      const results = getRecipeChildRows(rec.id, "up");
+      const mainResultName = results.length > 0 ? results[0].name : rec.name;
+
+      const row = document.createElement("div");
+      row.className = "missing-row";
+
+      const left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.alignItems = "center";
+      left.style.gap = "8px";
+
+      const img = document.createElement("img");
+      img.style.width = "20px";
+      img.style.height = "20px";
+      img.style.imageRendering = "pixelated";
+      img.src = iconSrc(mainResultName);
+      img.alt = "";
+
+      const span = document.createElement("span");
+      span.innerHTML = "<strong>" + mainResultName + "</strong> (" + rec.name + ") — <span style='color:var(--red)'>✗ Missing " + item.missingItem + "</span>";
+
+      left.appendChild(img);
+      left.appendChild(span);
+
+      const addMissingBtn = document.createElement("button");
+      addMissingBtn.className = "craft-add-btn";
+      addMissingBtn.textContent = "+ Add " + item.missingItem;
+      addMissingBtn.addEventListener("click", function () {
+        state.inventory.add(item.missingItem);
+        render();
+      });
+
+      row.appendChild(left);
+      row.appendChild(addMissingBtn);
+      missingList.appendChild(row);
+    });
+
+    topBarLabel.textContent = "✦ what I can craft · " + fullyCraftable.length + " craftable items";
+    topBarHint.textContent = "select items on the left to see what you can craft · click + Add to chain recipes";
+  }
+
   function render() {
     renderCurrentItem();
     renderModeButtons();
@@ -1245,10 +1637,15 @@
       renderPlanning();
     } else {
       renderDirectionButtons();
+      inventoryControls.style.display = (state.direction === "craft") ? "flex" : "none";
       if (state.direction === "down") {
+        craftView.style.display = "none";
         renderGraph();
-      } else {
+      } else if (state.direction === "up") {
+        craftView.style.display = "none";
         renderList();
+      } else if (state.direction === "craft") {
+        renderCraft();
       }
     }
   }
@@ -1285,6 +1682,13 @@
 
   dirDown.addEventListener("click", function () { setDirection("down"); });
   dirUp.addEventListener("click", function () { setDirection("up"); });
+  dirCraft.addEventListener("click", function () { setDirection("craft"); });
+  if (invClearBtn) {
+    invClearBtn.addEventListener("click", function () {
+      state.inventory.clear();
+      render();
+    });
+  }
 
   // ---- Search ----
 
@@ -1307,7 +1711,14 @@
       row.appendChild(span);
       row.addEventListener("mousedown", function (ev) {
         ev.preventDefault();
-        setRootItem(name);
+        if (state.direction === "craft") {
+          state.inventory.add(name);
+          searchInput.value = "";
+          closeSearch();
+          render();
+        } else {
+          setRootItem(name);
+        }
       });
       searchResults.appendChild(row);
     });
@@ -1339,7 +1750,15 @@
     } else if (ev.key === "Enter") {
       ev.preventDefault();
       if (searchActiveIndex >= 0 && searchMatches[searchActiveIndex]) {
-        setRootItem(searchMatches[searchActiveIndex]);
+        const item = searchMatches[searchActiveIndex];
+        if (state.direction === "craft") {
+          state.inventory.add(item);
+          searchInput.value = "";
+          closeSearch();
+          render();
+        } else {
+          setRootItem(item);
+        }
       }
       return;
     } else if (ev.key === "Escape") {
