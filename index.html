@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factorio 2.0 / Space Age - Recipe & Quality Hub</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --background: #121316;
+      --card: #1a1c23;
+      --border: #2e3342;
+      --foreground: #f1f5f9;
+      --muted-foreground: #94a3b8;
+      --accent: #f97316;
+      --accent-muted: #ea580c;
+      --primary: #f97316;
+      --primary-foreground: #ffffff;
+      --secondary: #27272a;
+      --secondary-foreground: #e4e4e7;
+    }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #15171e;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333846;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f97316;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen pb-12">
+
+  <!-- Main Navigation Header -->
+  <header class="border-b border-[var(--border)] bg-[#15171e]/90 sticky top-0 z-50 backdrop-blur-md px-4 lg:px-8 py-3.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-orange-600 flex items-center justify-center font-black text-xl text-white shadow-inner">
+          ⚙
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Factorio 2.0 <span class="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">Space Age</span>
+          </h1>
+          <p class="text-xs text-[var(--muted-foreground)]">Recipe Engine, Quality & Loop Calculators</p>
+        </div>
+      </div>
+
+      <!-- Top Mode Selector -->
+      <nav class="flex items-center bg-[#1e222d] p-1 rounded-xl border border-[var(--border)]" id="mode-tabs">
+        <button onclick="switchMode('recipe')" id="tab-btn-recipe" class="mode-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center gap-2 bg-orange-600 text-white shadow-sm">
+          <span>📦</span> Recipe
+        </button>
+        <button onclick="switchMode('quality')" id="tab-btn-quality" class="mode-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center gap-2 text-[var(--muted-foreground)] hover:text-white">
+          <span>💎</span> Quality Calc
+        </button>
+        <button onclick="switchMode('speed')" id="tab-btn-speed" class="mode-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center gap-2 text-[var(--muted-foreground)] hover:text-white">
+          <span>⚡</span> Speed & Loops
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6">
+
+    <!-- ==================== MODE 1: RECIPE ==================== -->
+    <section id="mode-recipe" class="space-y-6">
+      
+      <!-- Recipe Subtabs -->
+      <div class="flex flex-wrap items-center justify-between border-b border-[var(--border)] pb-3 gap-3">
+        <div class="flex items-center gap-2 bg-[#181a22] p-1 rounded-lg border border-[var(--border)]">
+          <button onclick="switchRecipeSubtab('craftable')" id="subtab-btn-craftable" class="recipe-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider bg-orange-500 text-white shadow">
+            ✨ O que posso fabricar (Craftable)
+          </button>
+          <button onclick="switchRecipeSubtab('need')" id="subtab-btn-need" class="recipe-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] hover:text-white">
+            🌲 O que preciso (Tree / DAG)
+          </button>
+          <button onclick="switchRecipeSubtab('make')" id="subtab-btn-make" class="recipe-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] hover:text-white">
+            🚀 O que posso fazer (Usos & End Products)
+          </button>
+          <button onclick="switchRecipeSubtab('catalog')" id="subtab-btn-catalog" class="recipe-subtab-btn px-3.5 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] hover:text-white">
+            📖 Todas as Receitas (311)
+          </button>
+        </div>
+
+        <div class="text-xs text-[var(--muted-foreground)] flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> 311 receitas ativas no banco
+        </div>
+      </div>
+
+      <!-- ==================== SUBTAB: CRAFTABLE FROM ITEMS ==================== -->
+      <div id="recipe-subtab-craftable" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Inventory Selector (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="font-bold text-base text-white flex items-center gap-2">
+                <span>🎒</span> Seu Inventário de Itens
+              </h2>
+              <button onclick="clearInventory()" class="text-xs text-red-400 hover:text-red-300 transition-colors underline">
+                Limpar tudo
+              </button>
+            </div>
+            
+            <p class="text-xs text-[var(--muted-foreground)] mb-4">
+              Selecione os itens que você possui disponíveis. O sistema responderá instantaneamente os itens diretos que você consegue fabricar.
+            </p>
+
+            <!-- Quick Preset Buttons -->
+            <div class="space-y-2 mb-4">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-orange-400">Seleção Rápida (Presets):</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="applyPreset('raw')" class="text-xs bg-[#242936] hover:bg-orange-600/30 hover:border-orange-500 border border-slate-700 text-slate-200 px-2.5 py-1 rounded transition-colors">
+                  ⛏ Minérios / Raw
+                </button>
+                <button onclick="applyPreset('plates')" class="text-xs bg-[#242936] hover:bg-orange-600/30 hover:border-orange-500 border border-slate-700 text-slate-200 px-2.5 py-1 rounded transition-colors">
+                  🔩 Placas & Circuitos
+                </button>
+                <button onclick="applyPreset('advanced')" class="text-xs bg-[#242936] hover:bg-orange-600/30 hover:border-orange-500 border border-slate-700 text-slate-200 px-2.5 py-1 rounded transition-colors">
+                  🚀 Intermediários Avançados
+                </button>
+                <button onclick="applyPreset('iron_starter')" class="text-xs bg-orange-950/60 hover:bg-orange-900 border border-orange-700/60 text-orange-300 px-2.5 py-1 rounded transition-colors font-medium">
+                  🔥 Ferro + Cobre Base
+                </button>
+              </div>
+            </div>
+
+            <!-- Search Item Input -->
+            <div class="relative mb-4">
+              <input type="text" id="item-search-input" oninput="renderItemPicker()" placeholder="🔍 Filtrar itens para adicionar..." class="w-full bg-[#13151b] border border-[var(--border)] focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500">
+            </div>
+
+            <!-- Active Selected Items Badges -->
+            <div class="border-t border-[var(--border)] pt-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-300">
+                  Itens Selecionados (<span id="selected-items-count" class="text-orange-400 font-bold">0</span>):
+                </span>
+              </div>
+              <div id="selected-items-container" class="flex flex-wrap gap-1.5 min-h-[44px] p-2 bg-[#13151b] rounded-lg border border-slate-800">
+                <!-- Badges rendered via JS -->
+              </div>
+            </div>
+
+            <!-- Item Picker Grid -->
+            <div class="mt-4">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-2">Catálogo de Itens (Clique para alternar):</span>
+              <div id="item-picker-list" class="max-h-72 overflow-y-auto pr-1 space-y-1 bg-[#13151b] p-2 rounded-lg border border-slate-800">
+                <!-- Checkbox buttons rendered via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Craftable Results (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          
+          <!-- Summary Header -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+              <div>
+                <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                  <span class="text-emerald-400">✨</span> Itens Diretamente Fabricáveis
+                </h3>
+                <p class="text-xs text-[var(--muted-foreground)]">
+                  Receitas completas cujos requisitos de ingredientes são 100% satisfeitos pelo seu inventário.
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="craftable-count-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  0 itens fabricáveis
+                </span>
+              </div>
+            </div>
+
+            <!-- Filter pack / category -->
+            <div class="flex items-center gap-2 pt-2 border-t border-[var(--border)] mt-3">
+              <span class="text-xs text-slate-400">Filtro de Pack:</span>
+              <select id="craftable-pack-filter" onchange="updateCraftableResults()" class="bg-[#13151b] border border-[var(--border)] rounded px-2 py-1 text-xs text-slate-200">
+                <option value="all">Todos os Packs (Base + Space Age + Quality)</option>
+                <option value="base">Apenas Base</option>
+                <option value="space-age">Space Age</option>
+                <option value="quality">Quality</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Fully Craftable Items Grid -->
+          <div id="craftable-items-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Rendered via JS -->
+          </div>
+
+          <!-- Missing One Ingredient Section -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm mt-6">
+            <div class="flex items-center justify-between cursor-pointer" onclick="toggleMissingOneSection()">
+              <div class="flex items-center gap-2">
+                <span class="text-amber-400 font-bold">⚠️</span>
+                <div>
+                  <h4 class="font-bold text-sm text-slate-200">Quase Fabricáveis (Falta apenas 1 ingrediente)</h4>
+                  <p class="text-xs text-[var(--muted-foreground)]">Itens que você poderá fabricar se conseguir mais um item.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="missing-one-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  0 receitas
+                </span>
+                <span id="missing-toggle-arrow" class="text-xs text-slate-400">▼</span>
+              </div>
+            </div>
+
+            <div id="missing-one-content" class="mt-4 space-y-2 border-t border-[var(--border)] pt-4 hidden">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================== SUBTAB: TREE / DAG (WHAT I NEED) ==================== -->
+      <div id="recipe-subtab-need" class="space-y-4 hidden">
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
+          <h3 class="font-bold text-base text-white mb-2 flex items-center gap-2">
+            <span>🌲</span> Árvore de Dependências: O que eu preciso para fabricar
+          </h3>
+          <p class="text-xs text-[var(--muted-foreground)] mb-4">
+            Escolha um item alvo para decompor todos os subcomponentes necessários até as matérias-primas fundamentais.
+          </p>
+          <div class="flex flex-wrap items-center gap-3 max-w-xl">
+            <select id="tree-root-select" onchange="renderDependencyTree()" class="bg-[#13151b] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white flex-1">
+              <!-- Options populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm overflow-x-auto">
+          <div id="tree-container" class="min-w-[500px]">
+            <!-- Tree rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SUBTAB: WHAT I CAN MAKE (END PRODUCTS & USES) ==================== -->
+      <div id="recipe-subtab-make" class="space-y-4 hidden">
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
+          <h3 class="font-bold text-base text-white mb-2 flex items-center gap-2">
+            <span>🚀</span> Usos e Produtos Finais: O que posso fazer com este item
+          </h3>
+          <p class="text-xs text-[var(--muted-foreground)] mb-4">
+            Selecione um ingrediente base para ver todas as receitas diretas que o consomem e todos os produtos finais alcançáveis.
+          </p>
+          <div class="flex flex-wrap items-center gap-3 max-w-xl">
+            <select id="make-root-select" onchange="renderMakeUses()" class="bg-[#13151b] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white flex-1">
+              <!-- Options populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
+            <h4 class="font-bold text-sm text-orange-400 mb-3 flex items-center gap-2">
+              <span>🔧</span> Receitas que consomem diretamente este item
+            </h4>
+            <div id="direct-uses-table" class="overflow-x-auto">
+              <!-- Table via JS -->
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
+            <h4 class="font-bold text-sm text-emerald-400 mb-3 flex items-center gap-2">
+              <span>🏆</span> Produtos Finais Alcançáveis (End Products)
+            </h4>
+            <div id="end-products-grid" class="flex flex-wrap gap-2">
+              <!-- Grid via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SUBTAB: ALL RECIPES CATALOG ==================== -->
+      <div id="recipe-subtab-catalog" class="space-y-4 hidden">
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-base text-white flex items-center gap-2">
+              <span>📖</span> Catálogo de Todas as Receitas Factorio 2.0
+            </h3>
+            <p class="text-xs text-[var(--muted-foreground)]">311 receitas oficiais (Base, Space Age e Quality).</p>
+          </div>
+          <input type="text" id="catalog-search" oninput="renderCatalogTable()" placeholder="🔍 Buscar receita, item ou ingrediente..." class="bg-[#13151b] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-white w-72 focus:outline-none focus:border-orange-500">
+        </div>
+
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto max-h-[600px]">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-[#15171e] text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 border-b border-[var(--border)]">
+                <tr>
+                  <th class="p-3">Receita</th>
+                  <th class="p-3">Resultados</th>
+                  <th class="p-3">Ingredientes</th>
+                  <th class="p-3">Tempo</th>
+                  <th class="p-3">Pack</th>
+                  <th class="p-3">Categoria</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-tbody" class="divide-y divide-slate-800">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== MODE 2: QUALITY CALCULATOR ==================== -->
+    <section id="mode-quality" class="space-y-6 hidden">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <span>💎</span> Calculadora de Probabilidades de Qualidade (Factorio 2.0 Space Age)
+        </h2>
+        <p class="text-xs text-[var(--muted-foreground)] mb-6">
+          Calcula a chance exata de upgrade de qualidade por tentativa segundo as regras do jogo:
+          1º roll com chance Q (soma dos módulos na máquina), e subsequentes rolls com chance fixa de 10% por tier adicional até Lendário.
+        </p>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#13151b] p-4 rounded-xl border border-slate-800 mb-6">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Tier do Módulo de Qualidade:</label>
+            <select id="qual-tier-select" onchange="calculateQualityTable()" class="w-full bg-[#1a1c23] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white">
+              <option value="3" selected>Quality Module 3 (+2.5% base)</option>
+              <option value="2">Quality Module 2 (+2.0% base)</option>
+              <option value="1">Quality Module 1 (+1.0% base)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Qualidade do Módulo:</label>
+            <select id="qual-mod-qual-select" onchange="calculateQualityTable()" class="w-full bg-[#1a1c23] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white">
+              <option value="Epic">Épico (x1.9 mult)</option>
+              <option value="Legendary" selected>Lendário (x2.5 mult)</option>
+              <option value="Rare">Raro (x1.6 mult)</option>
+              <option value="Uncommon">Incomum (x1.3 mult)</option>
+              <option value="Normal">Normal (x1.0 mult)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Quantidade de Módulos na Máquina:</label>
+            <input type="number" id="qual-mod-count-input" value="4" min="1" max="10" onchange="calculateQualityTable()" oninput="calculateQualityTable()" class="w-full bg-[#1a1c23] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+
+        <!-- Total Q Result Banner -->
+        <div class="bg-gradient-to-r from-orange-950/40 to-amber-950/20 border border-orange-800/40 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs uppercase tracking-wider text-orange-400 font-bold">Chance Total de Qualidade da Máquina (Q):</span>
+            <div id="total-q-display" class="text-2xl font-black text-white">19.000% <span class="text-xs text-slate-400 font-normal">(0.19000)</span></div>
+          </div>
+          <div class="text-xs text-slate-400 max-w-sm">
+            Fórmula de Roll: Cada item processado rola <span class="text-white font-semibold">Q</span> para subir pelo menos 1 tier. A cada tier extra subsequente, rola <span class="text-white font-semibold">10%</span> fixo.
+          </div>
+        </div>
+
+        <!-- Probability Matrix Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-center text-sm border-collapse">
+            <thead>
+              <tr class="bg-[#15171e] text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+                <th class="p-3 text-left">Qualidade de Entrada</th>
+                <th class="p-3 text-slate-300">Normal</th>
+                <th class="p-3 text-emerald-400">Incomum (Uncommon)</th>
+                <th class="p-3 text-blue-400">Raro (Rare)</th>
+                <th class="p-3 text-purple-400">Épico (Epic)</th>
+                <th class="p-3 text-amber-400 font-bold">Lendário (Legendary)</th>
+              </tr>
+            </thead>
+            <tbody id="quality-matrix-tbody" class="divide-y divide-slate-800">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MODE 3: SPEED & LOOPS ==================== -->
+    <section id="mode-speed" class="space-y-6 hidden">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <span>⚡</span> Otimização de Loops de Ferro e Velocidade (Vulcanus Upcycling)
+        </h2>
+        <p class="text-xs text-[var(--muted-foreground)] mb-6">
+          Simula o loop fechado de Foundry (Molten Iron -> Engrenagem) + Reciclador (4Q Épico, 25% yield) + Planta Eletromagnética (EP).
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="p-4 bg-[#13151b] rounded-xl border border-slate-800">
+            <h3 class="font-bold text-sm text-orange-400 mb-2">Loop Padrão (Foundry + Reciclador + EP)</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              • 1 Engrenagem = 2 Placas de Ferro.<br>
+              • Reciclador devolve 25% do valor = 0.50 Placas por engrenagem reciclada.<br>
+              • Melhores combinações combinam Módulos de Qualidade com Módulos de Produtividade para maximizar a geração de Lendários por ferro bruto.
+            </p>
+          </div>
+          <div class="p-4 bg-[#13151b] rounded-xl border border-slate-800">
+            <h3 class="font-bold text-sm text-emerald-400 mb-2">Configuração Campeã (Foundry 4P + Beacons)</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              • Foundry com 4P3 Épico + 8 Módulos de Velocidade 3 Épicos em Beacons.<br>
+              • Reciclador 4Q3 Épico (19% chance).<br>
+              • EP com <span class="text-amber-400 font-bold">3 Módulos Qualidade + 2 Produtividade</span> atinge a maior taxa de itens lendários por segundo!
+            </p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-[#15171e] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+                <th class="p-3">Configuração EP</th>
+                <th class="p-3 text-right">Vel. Foundry</th>
+                <th class="p-3 text-right">Crafts / s</th>
+                <th class="p-3 text-right">Lendários / s</th>
+                <th class="p-3 text-right">Tempo / 1 Lendário</th>
+                <th class="p-3 text-right">Custo Ferro Bruto</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300">
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-3 font-semibold text-white">EP: 5Q + 0P</td>
+                <td class="p-3 text-right text-cyan-400">32.00x</td>
+                <td class="p-3 text-right text-cyan-400">64.0/s</td>
+                <td class="p-3 text-right font-bold text-emerald-400">0.07683/s</td>
+                <td class="p-3 text-right text-amber-400 font-semibold">13.02 s</td>
+                <td class="p-3 text-right text-purple-400">10.37 ferros</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-3 font-semibold text-white">EP: 4Q + 1P</td>
+                <td class="p-3 text-right text-cyan-400">32.00x</td>
+                <td class="p-3 text-right text-cyan-400">64.0/s</td>
+                <td class="p-3 text-right font-bold text-emerald-400">0.08124/s</td>
+                <td class="p-3 text-right text-amber-400 font-semibold">12.31 s</td>
+                <td class="p-3 text-right text-purple-400">9.78 ferros</td>
+              </tr>
+              <tr class="bg-amber-950/30 border-l-4 border-amber-500 hover:bg-amber-950/40">
+                <td class="p-3 font-bold text-amber-300">🏆 EP: 3Q + 2P (Vencedor)</td>
+                <td class="p-3 text-right text-cyan-400">32.00x</td>
+                <td class="p-3 text-right text-cyan-400">64.0/s</td>
+                <td class="p-3 text-right font-black text-emerald-300">0.08375/s</td>
+                <td class="p-3 text-right text-amber-300 font-bold">11.94 s</td>
+                <td class="p-3 text-right text-purple-300 font-bold">9.42 ferros</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-3 font-semibold text-white">EP: 2Q + 3P</td>
+                <td class="p-3 text-right text-cyan-400">32.00x</td>
+                <td class="p-3 text-right text-cyan-400">64.0/s</td>
+                <td class="p-3 text-right font-bold text-emerald-400">0.08051/s</td>
+                <td class="p-3 text-right text-amber-400 font-semibold">12.42 s</td>
+                <td class="p-3 text-right text-purple-400">9.31 ferros</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="p-3 font-semibold text-white">EP: 1Q + 4P</td>
+                <td class="p-3 text-right text-cyan-400">32.00x</td>
+                <td class="p-3 text-right text-cyan-400">64.0/s</td>
+                <td class="p-3 text-right font-bold text-emerald-400">0.07120/s</td>
+                <td class="p-3 text-right text-amber-400 font-semibold">14.04 s</td>
+                <td class="p-3 text-right text-purple-400">9.48 ferros</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Embedded Dataset & Logic -->
+  <script>
+    const FACTORIO_DATA = {"recipes": [{"id": 1, "name": "speed-module", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "speed-module", "kind": "item", "amount": 1.0}]}, {"id": 2, "name": "speed-module-2", "pack": "base", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "speed-module", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "speed-module-2", "kind": "item", "amount": 1.0}]}, {"id": 3, "name": "speed-module-3", "pack": "base", "energy": 60.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "speed-module-2", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "speed-module-3", "kind": "item", "amount": 1.0}]}, {"id": 4, "name": "productivity-module", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "productivity-module", "kind": "item", "amount": 1.0}]}, {"id": 5, "name": "productivity-module-2", "pack": "base", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "productivity-module", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "productivity-module-2", "kind": "item", "amount": 1.0}]}, {"id": 6, "name": "productivity-module-3", "pack": "base", "energy": 60.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "productivity-module-2", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "productivity-module-3", "kind": "item", "amount": 1.0}]}, {"id": 7, "name": "efficiency-module", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "efficiency-module", "kind": "item", "amount": 1.0}]}, {"id": 8, "name": "efficiency-module-2", "pack": "base", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "efficiency-module", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "efficiency-module-2", "kind": "item", "amount": 1.0}]}, {"id": 9, "name": "efficiency-module-3", "pack": "base", "energy": 60.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "efficiency-module-2", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "efficiency-module-3", "kind": "item", "amount": 1.0}]}, {"id": 10, "name": "bulk-inserter", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 15.0}, {"name": "electronic-circuit", "kind": "item", "amount": 15.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}, {"name": "fast-inserter", "kind": "item", "amount": 1.0}], "results": [{"name": "bulk-inserter", "kind": "item", "amount": 1.0}]}, {"id": 11, "name": "basic-oil-processing", "pack": "base", "energy": 5.0, "categories": ["oil-processing"], "subgroup": "fluid-recipes", "ingredients": [{"name": "crude-oil", "kind": "fluid", "amount": 100.0}], "results": [{"name": "petroleum-gas", "kind": "fluid", "amount": 45.0}]}, {"id": 12, "name": "advanced-oil-processing", "pack": "base", "energy": 5.0, "categories": ["oil-processing"], "subgroup": "fluid-recipes", "ingredients": [{"name": "water", "kind": "fluid", "amount": 50.0}, {"name": "crude-oil", "kind": "fluid", "amount": 100.0}], "results": [{"name": "heavy-oil", "kind": "fluid", "amount": 25.0}, {"name": "light-oil", "kind": "fluid", "amount": 45.0}, {"name": "petroleum-gas", "kind": "fluid", "amount": 55.0}]}, {"id": 13, "name": "coal-liquefaction", "pack": "base", "energy": 5.0, "categories": ["oil-processing"], "subgroup": "fluid-recipes", "ingredients": [{"name": "coal", "kind": "item", "amount": 10.0}, {"name": "heavy-oil", "kind": "fluid", "amount": 25.0}, {"name": "steam", "kind": "fluid", "amount": 50.0}], "results": [{"name": "heavy-oil", "kind": "fluid", "amount": 90.0}, {"name": "light-oil", "kind": "fluid", "amount": 20.0}, {"name": "petroleum-gas", "kind": "fluid", "amount": 10.0}]}, {"id": 14, "name": "heavy-oil-cracking", "pack": "base", "energy": 2.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "water", "kind": "fluid", "amount": 30.0}, {"name": "heavy-oil", "kind": "fluid", "amount": 40.0}], "results": [{"name": "light-oil", "kind": "fluid", "amount": 30.0}]}, {"id": 15, "name": "light-oil-cracking", "pack": "base", "energy": 2.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "water", "kind": "fluid", "amount": 30.0}, {"name": "light-oil", "kind": "fluid", "amount": 30.0}], "results": [{"name": "petroleum-gas", "kind": "fluid", "amount": 20.0}]}, {"id": 16, "name": "sulfuric-acid", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "sulfur", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "sulfuric-acid", "kind": "fluid", "amount": 50.0}]}, {"id": 17, "name": "plastic-bar", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "other", "ingredients": [{"name": "petroleum-gas", "kind": "fluid", "amount": 20.0}, {"name": "coal", "kind": "item", "amount": 1.0}], "results": [{"name": "plastic-bar", "kind": "item", "amount": 2.0}]}, {"id": 18, "name": "solid-fuel-from-light-oil", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "light-oil", "kind": "fluid", "amount": 10.0}], "results": [{"name": "solid-fuel", "kind": "item", "amount": 1.0}]}, {"id": 19, "name": "solid-fuel-from-petroleum-gas", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "petroleum-gas", "kind": "fluid", "amount": 20.0}], "results": [{"name": "solid-fuel", "kind": "item", "amount": 1.0}]}, {"id": 20, "name": "solid-fuel-from-heavy-oil", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "heavy-oil", "kind": "fluid", "amount": 20.0}], "results": [{"name": "solid-fuel", "kind": "item", "amount": 1.0}]}, {"id": 21, "name": "sulfur", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "other", "ingredients": [{"name": "water", "kind": "fluid", "amount": 30.0}, {"name": "petroleum-gas", "kind": "fluid", "amount": 30.0}], "results": [{"name": "sulfur", "kind": "item", "amount": 2.0}]}, {"id": 22, "name": "lubricant", "pack": "base", "energy": 1.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "heavy-oil", "kind": "fluid", "amount": 10.0}], "results": [{"name": "lubricant", "kind": "fluid", "amount": 10.0}]}, {"id": 23, "name": "barrel", "pack": "base", "energy": 1.0, "categories": ["crafting"], "subgroup": "intermediate-product", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "barrel", "kind": "item", "amount": 1.0}]}, {"id": 24, "name": "night-vision-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "steel-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "night-vision-equipment", "kind": "item", "amount": 1.0}]}, {"id": 25, "name": "belt-immunity-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "steel-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "belt-immunity-equipment", "kind": "item", "amount": 1.0}]}, {"id": 26, "name": "energy-shield-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "steel-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "energy-shield-equipment", "kind": "item", "amount": 1.0}]}, {"id": 27, "name": "energy-shield-mk2-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "energy-shield-equipment", "kind": "item", "amount": 10.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}, {"name": "low-density-structure", "kind": "item", "amount": 5.0}], "results": [{"name": "energy-shield-mk2-equipment", "kind": "item", "amount": 1.0}]}, {"id": 28, "name": "battery-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "battery", "kind": "item", "amount": 5.0}, {"name": "steel-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "battery-equipment", "kind": "item", "amount": 1.0}]}, {"id": 29, "name": "battery-mk2-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "battery-equipment", "kind": "item", "amount": 10.0}, {"name": "processing-unit", "kind": "item", "amount": 15.0}, {"name": "low-density-structure", "kind": "item", "amount": 5.0}], "results": [{"name": "battery-mk2-equipment", "kind": "item", "amount": 1.0}]}, {"id": 30, "name": "solar-panel-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "solar-panel", "kind": "item", "amount": 1.0}, {"name": "advanced-circuit", "kind": "item", "amount": 2.0}, {"name": "steel-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "solar-panel-equipment", "kind": "item", "amount": 1.0}]}, {"id": 31, "name": "fission-reactor-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 200.0}, {"name": "low-density-structure", "kind": "item", "amount": 50.0}, {"name": "uranium-fuel-cell", "kind": "item", "amount": 4.0}], "results": [{"name": "fission-reactor-equipment", "kind": "item", "amount": 1.0}]}, {"id": 32, "name": "personal-laser-defense-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 20.0}, {"name": "low-density-structure", "kind": "item", "amount": 5.0}, {"name": "laser-turret", "kind": "item", "amount": 5.0}], "results": [{"name": "personal-laser-defense-equipment", "kind": "item", "amount": 1.0}]}, {"id": 33, "name": "discharge-defense-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 5.0}, {"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "laser-turret", "kind": "item", "amount": 10.0}], "results": [{"name": "discharge-defense-equipment", "kind": "item", "amount": 1.0}]}, {"id": 34, "name": "exoskeleton-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 10.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 30.0}, {"name": "steel-plate", "kind": "item", "amount": 20.0}], "results": [{"name": "exoskeleton-equipment", "kind": "item", "amount": 1.0}]}, {"id": 35, "name": "personal-roboport-equipment", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 10.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 40.0}, {"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "battery", "kind": "item", "amount": 45.0}], "results": [{"name": "personal-roboport-equipment", "kind": "item", "amount": 1.0}]}, {"id": 36, "name": "personal-roboport-mk2-equipment", "pack": "base", "energy": 20.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "personal-roboport-equipment", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 100.0}, {"name": "low-density-structure", "kind": "item", "amount": 20.0}], "results": [{"name": "personal-roboport-mk2-equipment", "kind": "item", "amount": 1.0}]}, {"id": 37, "name": "laser-turret", "pack": "base", "energy": 20.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "electronic-circuit", "kind": "item", "amount": 20.0}, {"name": "battery", "kind": "item", "amount": 12.0}], "results": [{"name": "laser-turret", "kind": "item", "amount": 1.0}]}, {"id": 38, "name": "flamethrower-turret", "pack": "base", "energy": 20.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 30.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 15.0}, {"name": "pipe", "kind": "item", "amount": 10.0}, {"name": "engine-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "flamethrower-turret", "kind": "item", "amount": 1.0}]}, {"id": 39, "name": "artillery-turret", "pack": "base", "energy": 40.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 60.0}, {"name": "concrete", "kind": "item", "amount": 60.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 40.0}, {"name": "advanced-circuit", "kind": "item", "amount": 20.0}], "results": [{"name": "artillery-turret", "kind": "item", "amount": 1.0}]}, {"id": 40, "name": "gun-turret", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "copper-plate", "kind": "item", "amount": 10.0}, {"name": "iron-plate", "kind": "item", "amount": 20.0}], "results": [{"name": "gun-turret", "kind": "item", "amount": 1.0}]}, {"id": 41, "name": "wooden-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "wood", "kind": "item", "amount": 2.0}], "results": [{"name": "wooden-chest", "kind": "item", "amount": 1.0}]}, {"id": 42, "name": "display-panel", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 1.0}], "results": [{"name": "display-panel", "kind": "item", "amount": 1.0}]}, {"id": 43, "name": "iron-stick", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "iron-stick", "kind": "item", "amount": 2.0}]}, {"id": 44, "name": "stone-furnace", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "stone", "kind": "item", "amount": 5.0}], "results": [{"name": "stone-furnace", "kind": "item", "amount": 1.0}]}, {"id": 45, "name": "boiler", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "stone-furnace", "kind": "item", "amount": 1.0}, {"name": "pipe", "kind": "item", "amount": 4.0}], "results": [{"name": "boiler", "kind": "item", "amount": 1.0}]}, {"id": 46, "name": "steam-engine", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 8.0}, {"name": "pipe", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "steam-engine", "kind": "item", "amount": 1.0}]}, {"id": 47, "name": "iron-gear-wheel", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 2.0}], "results": [{"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}]}, {"id": 48, "name": "electronic-circuit", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "copper-cable", "kind": "item", "amount": 3.0}], "results": [{"name": "electronic-circuit", "kind": "item", "amount": 1.0}]}, {"id": 49, "name": "transport-belt", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}], "results": [{"name": "transport-belt", "kind": "item", "amount": 2.0}]}, {"id": 50, "name": "electric-mining-drill", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "electric-mining-drill", "kind": "item", "amount": 1.0}]}, {"id": 51, "name": "burner-mining-drill", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 3.0}, {"name": "stone-furnace", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 3.0}], "results": [{"name": "burner-mining-drill", "kind": "item", "amount": 1.0}]}, {"id": 52, "name": "inserter", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "inserter", "kind": "item", "amount": 1.0}]}, {"id": 53, "name": "fast-inserter", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 2.0}, {"name": "iron-plate", "kind": "item", "amount": 2.0}, {"name": "inserter", "kind": "item", "amount": 1.0}], "results": [{"name": "fast-inserter", "kind": "item", "amount": 1.0}]}, {"id": 54, "name": "long-handed-inserter", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "inserter", "kind": "item", "amount": 1.0}], "results": [{"name": "long-handed-inserter", "kind": "item", "amount": 1.0}]}, {"id": 55, "name": "burner-inserter", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}], "results": [{"name": "burner-inserter", "kind": "item", "amount": 1.0}]}, {"id": 56, "name": "pipe", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "pipe", "kind": "item", "amount": 1.0}]}, {"id": 57, "name": "offshore-pump", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "pipe", "kind": "item", "amount": 3.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 2.0}], "results": [{"name": "offshore-pump", "kind": "item", "amount": 1.0}]}, {"id": 58, "name": "copper-cable", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "copper-cable", "kind": "item", "amount": 2.0}]}, {"id": 59, "name": "small-electric-pole", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "wood", "kind": "item", "amount": 1.0}, {"name": "copper-cable", "kind": "item", "amount": 2.0}], "results": [{"name": "small-electric-pole", "kind": "item", "amount": 2.0}]}, {"id": 61, "name": "submachine-gun", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "copper-plate", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "submachine-gun", "kind": "item", "amount": 1.0}]}, {"id": 62, "name": "firearm-magazine", "pack": "base", "energy": 1.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 4.0}], "results": [{"name": "firearm-magazine", "kind": "item", "amount": 1.0}]}, {"id": 63, "name": "light-armor", "pack": "base", "energy": 3.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 40.0}], "results": [{"name": "light-armor", "kind": "item", "amount": 1.0}]}, {"id": 64, "name": "radar", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 10.0}], "results": [{"name": "radar", "kind": "item", "amount": 1.0}]}, {"id": 65, "name": "small-lamp", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 1.0}, {"name": "copper-cable", "kind": "item", "amount": 3.0}, {"name": "iron-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "small-lamp", "kind": "item", "amount": 1.0}]}, {"id": 66, "name": "pipe-to-ground", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "pipe", "kind": "item", "amount": 10.0}, {"name": "iron-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "pipe-to-ground", "kind": "item", "amount": 2.0}]}, {"id": 67, "name": "assembling-machine-1", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 9.0}], "results": [{"name": "assembling-machine-1", "kind": "item", "amount": 1.0}]}, {"id": 68, "name": "repair-pack", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 2.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 2.0}], "results": [{"name": "repair-pack", "kind": "item", "amount": 1.0}]}, {"id": 69, "name": "automation-science-pack", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-plate", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}], "results": [{"name": "automation-science-pack", "kind": "item", "amount": 1.0}]}, {"id": 70, "name": "logistic-science-pack", "pack": "base", "energy": 6.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "inserter", "kind": "item", "amount": 1.0}, {"name": "transport-belt", "kind": "item", "amount": 1.0}], "results": [{"name": "logistic-science-pack", "kind": "item", "amount": 1.0}]}, {"id": 71, "name": "lab", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 10.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "transport-belt", "kind": "item", "amount": 4.0}], "results": [{"name": "lab", "kind": "item", "amount": 1.0}]}, {"id": 72, "name": "stone-wall", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "stone-brick", "kind": "item", "amount": 5.0}], "results": [{"name": "stone-wall", "kind": "item", "amount": 1.0}]}, {"id": 73, "name": "assembling-machine-2", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "assembling-machine-1", "kind": "item", "amount": 1.0}], "results": [{"name": "assembling-machine-2", "kind": "item", "amount": 1.0}]}, {"id": 74, "name": "splitter", "pack": "base", "energy": 1.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 5.0}, {"name": "transport-belt", "kind": "item", "amount": 4.0}], "results": [{"name": "splitter", "kind": "item", "amount": 1.0}]}, {"id": 75, "name": "underground-belt", "pack": "base", "energy": 1.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 10.0}, {"name": "transport-belt", "kind": "item", "amount": 5.0}], "results": [{"name": "underground-belt", "kind": "item", "amount": 2.0}]}, {"id": 77, "name": "car", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 8.0}, {"name": "iron-plate", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "car", "kind": "item", "amount": 1.0}]}, {"id": 78, "name": "engine-unit", "pack": "base", "energy": 10.0, "categories": ["advanced-crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}, {"name": "pipe", "kind": "item", "amount": 2.0}], "results": [{"name": "engine-unit", "kind": "item", "amount": 1.0}]}, {"id": 79, "name": "iron-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 8.0}], "results": [{"name": "iron-chest", "kind": "item", "amount": 1.0}]}, {"id": 80, "name": "big-electric-pole", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-stick", "kind": "item", "amount": 8.0}, {"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "copper-cable", "kind": "item", "amount": 4.0}], "results": [{"name": "big-electric-pole", "kind": "item", "amount": 1.0}]}, {"id": 81, "name": "medium-electric-pole", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-stick", "kind": "item", "amount": 4.0}, {"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "copper-cable", "kind": "item", "amount": 2.0}], "results": [{"name": "medium-electric-pole", "kind": "item", "amount": 1.0}]}, {"id": 82, "name": "shotgun", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 15.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "copper-plate", "kind": "item", "amount": 10.0}, {"name": "wood", "kind": "item", "amount": 5.0}], "results": [{"name": "shotgun", "kind": "item", "amount": 1.0}]}, {"id": 83, "name": "shotgun-shell", "pack": "base", "energy": 3.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-plate", "kind": "item", "amount": 2.0}, {"name": "iron-plate", "kind": "item", "amount": 2.0}], "results": [{"name": "shotgun-shell", "kind": "item", "amount": 1.0}]}, {"id": 84, "name": "piercing-rounds-magazine", "pack": "base", "energy": 6.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "firearm-magazine", "kind": "item", "amount": 2.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "copper-plate", "kind": "item", "amount": 2.0}], "results": [{"name": "piercing-rounds-magazine", "kind": "item", "amount": 2.0}]}, {"id": 85, "name": "grenade", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 5.0}, {"name": "coal", "kind": "item", "amount": 10.0}], "results": [{"name": "grenade", "kind": "item", "amount": 1.0}]}, {"id": 86, "name": "steel-furnace", "pack": "base", "energy": 3.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 6.0}, {"name": "stone-brick", "kind": "item", "amount": 10.0}], "results": [{"name": "steel-furnace", "kind": "item", "amount": 1.0}]}, {"id": 87, "name": "gate", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "stone-wall", "kind": "item", "amount": 1.0}, {"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "electronic-circuit", "kind": "item", "amount": 2.0}], "results": [{"name": "gate", "kind": "item", "amount": 1.0}]}, {"id": 88, "name": "heavy-armor", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-plate", "kind": "item", "amount": 100.0}, {"name": "steel-plate", "kind": "item", "amount": 50.0}], "results": [{"name": "heavy-armor", "kind": "item", "amount": 1.0}]}, {"id": 89, "name": "steel-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 8.0}], "results": [{"name": "steel-chest", "kind": "item", "amount": 1.0}]}, {"id": 90, "name": "fast-underground-belt", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 40.0}, {"name": "underground-belt", "kind": "item", "amount": 2.0}], "results": [{"name": "fast-underground-belt", "kind": "item", "amount": 2.0}]}, {"id": 91, "name": "fast-splitter", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "splitter", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "electronic-circuit", "kind": "item", "amount": 10.0}], "results": [{"name": "fast-splitter", "kind": "item", "amount": 1.0}]}, {"id": 92, "name": "concrete", "pack": "base", "energy": 10.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "stone-brick", "kind": "item", "amount": 5.0}, {"name": "iron-ore", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "concrete", "kind": "item", "amount": 10.0}]}, {"id": 93, "name": "hazard-concrete", "pack": "base", "energy": 0.25, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "concrete", "kind": "item", "amount": 10.0}], "results": [{"name": "hazard-concrete", "kind": "item", "amount": 10.0}]}, {"id": 94, "name": "refined-concrete", "pack": "base", "energy": 15.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "concrete", "kind": "item", "amount": 20.0}, {"name": "iron-stick", "kind": "item", "amount": 8.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "refined-concrete", "kind": "item", "amount": 10.0}]}, {"id": 95, "name": "refined-hazard-concrete", "pack": "base", "energy": 0.25, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "refined-concrete", "kind": "item", "amount": 10.0}], "results": [{"name": "refined-hazard-concrete", "kind": "item", "amount": 10.0}]}, {"id": 96, "name": "landfill", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "stone", "kind": "item", "amount": 50.0}], "results": [{"name": "landfill", "kind": "item", "amount": 1.0}]}, {"id": 97, "name": "fast-transport-belt", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "transport-belt", "kind": "item", "amount": 1.0}], "results": [{"name": "fast-transport-belt", "kind": "item", "amount": 1.0}]}, {"id": 98, "name": "solar-panel", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 15.0}, {"name": "copper-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "solar-panel", "kind": "item", "amount": 1.0}]}, {"id": 99, "name": "rail", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "stone", "kind": "item", "amount": 1.0}, {"name": "iron-stick", "kind": "item", "amount": 1.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "rail", "kind": "item", "amount": 2.0}]}, {"id": 100, "name": "locomotive", "pack": "base", "energy": 4.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 20.0}, {"name": "electronic-circuit", "kind": "item", "amount": 10.0}, {"name": "steel-plate", "kind": "item", "amount": 30.0}], "results": [{"name": "locomotive", "kind": "item", "amount": 1.0}]}, {"id": 101, "name": "cargo-wagon", "pack": "base", "energy": 1.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "iron-plate", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 20.0}], "results": [{"name": "cargo-wagon", "kind": "item", "amount": 1.0}]}, {"id": 102, "name": "rail-signal", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "rail-signal", "kind": "item", "amount": 1.0}]}, {"id": 103, "name": "rail-chain-signal", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "rail-chain-signal", "kind": "item", "amount": 1.0}]}, {"id": 104, "name": "train-stop", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "iron-plate", "kind": "item", "amount": 6.0}, {"name": "iron-stick", "kind": "item", "amount": 6.0}, {"name": "steel-plate", "kind": "item", "amount": 3.0}], "results": [{"name": "train-stop", "kind": "item", "amount": 1.0}]}, {"id": 105, "name": "copper-plate", "pack": "base", "energy": 3.2, "categories": ["smelting"], "subgroup": "other", "ingredients": [{"name": "copper-ore", "kind": "item", "amount": 1.0}], "results": [{"name": "copper-plate", "kind": "item", "amount": 1.0}]}, {"id": 106, "name": "iron-plate", "pack": "base", "energy": 3.2, "categories": ["smelting"], "subgroup": "other", "ingredients": [{"name": "iron-ore", "kind": "item", "amount": 1.0}], "results": [{"name": "iron-plate", "kind": "item", "amount": 1.0}]}, {"id": 107, "name": "stone-brick", "pack": "base", "energy": 3.2, "categories": ["smelting"], "subgroup": "other", "ingredients": [{"name": "stone", "kind": "item", "amount": 2.0}], "results": [{"name": "stone-brick", "kind": "item", "amount": 1.0}]}, {"id": 108, "name": "steel-plate", "pack": "base", "energy": 16.0, "categories": ["smelting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "steel-plate", "kind": "item", "amount": 1.0}]}, {"id": 109, "name": "arithmetic-combinator", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-cable", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "arithmetic-combinator", "kind": "item", "amount": 1.0}]}, {"id": 110, "name": "decider-combinator", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-cable", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "decider-combinator", "kind": "item", "amount": 1.0}]}, {"id": 111, "name": "constant-combinator", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "copper-cable", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 2.0}], "results": [{"name": "constant-combinator", "kind": "item", "amount": 1.0}]}, {"id": 112, "name": "selector-combinator", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 2.0}, {"name": "decider-combinator", "kind": "item", "amount": 5.0}], "results": [{"name": "selector-combinator", "kind": "item", "amount": 1.0}]}, {"id": 113, "name": "power-switch", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 5.0}, {"name": "copper-cable", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 2.0}], "results": [{"name": "power-switch", "kind": "item", "amount": 1.0}]}, {"id": 114, "name": "programmable-speaker", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 3.0}, {"name": "iron-stick", "kind": "item", "amount": 4.0}, {"name": "copper-cable", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 4.0}], "results": [{"name": "programmable-speaker", "kind": "item", "amount": 1.0}]}, {"id": 115, "name": "poison-capsule", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 3.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "coal", "kind": "item", "amount": 10.0}], "results": [{"name": "poison-capsule", "kind": "item", "amount": 1.0}]}, {"id": 116, "name": "slowdown-capsule", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "electronic-circuit", "kind": "item", "amount": 2.0}, {"name": "coal", "kind": "item", "amount": 5.0}], "results": [{"name": "slowdown-capsule", "kind": "item", "amount": 1.0}]}, {"id": 117, "name": "cluster-grenade", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "grenade", "kind": "item", "amount": 7.0}, {"name": "explosives", "kind": "item", "amount": 5.0}, {"name": "steel-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "cluster-grenade", "kind": "item", "amount": 1.0}]}, {"id": 118, "name": "defender-capsule", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "piercing-rounds-magazine", "kind": "item", "amount": 3.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 3.0}], "results": [{"name": "defender-capsule", "kind": "item", "amount": 1.0}]}, {"id": 119, "name": "distractor-capsule", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "defender-capsule", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 3.0}], "results": [{"name": "distractor-capsule", "kind": "item", "amount": 1.0}]}, {"id": 120, "name": "destroyer-capsule", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "distractor-capsule", "kind": "item", "amount": 4.0}, {"name": "speed-module", "kind": "item", "amount": 1.0}], "results": [{"name": "destroyer-capsule", "kind": "item", "amount": 1.0}]}, {"id": 121, "name": "cliff-explosives", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "explosives", "kind": "item", "amount": 10.0}, {"name": "grenade", "kind": "item", "amount": 1.0}, {"name": "barrel", "kind": "item", "amount": 1.0}], "results": [{"name": "cliff-explosives", "kind": "item", "amount": 1.0}]}, {"id": 122, "name": "uranium-rounds-magazine", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "piercing-rounds-magazine", "kind": "item", "amount": 1.0}, {"name": "uranium-238", "kind": "item", "amount": 1.0}], "results": [{"name": "uranium-rounds-magazine", "kind": "item", "amount": 1.0}]}, {"id": 123, "name": "rocket", "pack": "base", "energy": 4.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "explosives", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 2.0}], "results": [{"name": "rocket", "kind": "item", "amount": 1.0}]}, {"id": 124, "name": "explosive-rocket", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "rocket", "kind": "item", "amount": 1.0}, {"name": "explosives", "kind": "item", "amount": 2.0}], "results": [{"name": "explosive-rocket", "kind": "item", "amount": 1.0}]}, {"id": 125, "name": "atomic-bomb", "pack": "base", "energy": 50.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 10.0}, {"name": "explosives", "kind": "item", "amount": 10.0}, {"name": "uranium-235", "kind": "item", "amount": 30.0}], "results": [{"name": "atomic-bomb", "kind": "item", "amount": 1.0}]}, {"id": 126, "name": "piercing-shotgun-shell", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "shotgun-shell", "kind": "item", "amount": 2.0}, {"name": "copper-plate", "kind": "item", "amount": 2.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "piercing-shotgun-shell", "kind": "item", "amount": 2.0}]}, {"id": 127, "name": "cannon-shell", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "plastic-bar", "kind": "item", "amount": 2.0}, {"name": "explosives", "kind": "item", "amount": 1.0}], "results": [{"name": "cannon-shell", "kind": "item", "amount": 1.0}]}, {"id": 128, "name": "explosive-cannon-shell", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "plastic-bar", "kind": "item", "amount": 2.0}, {"name": "explosives", "kind": "item", "amount": 2.0}], "results": [{"name": "explosive-cannon-shell", "kind": "item", "amount": 1.0}]}, {"id": 129, "name": "uranium-cannon-shell", "pack": "base", "energy": 12.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "cannon-shell", "kind": "item", "amount": 1.0}, {"name": "uranium-238", "kind": "item", "amount": 1.0}], "results": [{"name": "uranium-cannon-shell", "kind": "item", "amount": 1.0}]}, {"id": 130, "name": "explosive-uranium-cannon-shell", "pack": "base", "energy": 12.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "explosive-cannon-shell", "kind": "item", "amount": 1.0}, {"name": "uranium-238", "kind": "item", "amount": 1.0}], "results": [{"name": "explosive-uranium-cannon-shell", "kind": "item", "amount": 1.0}]}, {"id": 131, "name": "artillery-shell", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "explosive-cannon-shell", "kind": "item", "amount": 4.0}, {"name": "radar", "kind": "item", "amount": 1.0}, {"name": "explosives", "kind": "item", "amount": 8.0}], "results": [{"name": "artillery-shell", "kind": "item", "amount": 1.0}]}, {"id": 132, "name": "flamethrower-ammo", "pack": "base", "energy": 6.0, "categories": ["chemistry"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "crude-oil", "kind": "fluid", "amount": 100.0}], "results": [{"name": "flamethrower-ammo", "kind": "item", "amount": 1.0}]}, {"id": 133, "name": "express-transport-belt", "pack": "base", "energy": 0.5, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "fast-transport-belt", "kind": "item", "amount": 1.0}, {"name": "lubricant", "kind": "fluid", "amount": 20.0}], "results": [{"name": "express-transport-belt", "kind": "item", "amount": 1.0}]}, {"id": 134, "name": "assembling-machine-3", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "speed-module", "kind": "item", "amount": 4.0}, {"name": "assembling-machine-2", "kind": "item", "amount": 2.0}], "results": [{"name": "assembling-machine-3", "kind": "item", "amount": 1.0}]}, {"id": 135, "name": "tank", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 32.0}, {"name": "steel-plate", "kind": "item", "amount": 50.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 15.0}, {"name": "advanced-circuit", "kind": "item", "amount": 10.0}], "results": [{"name": "tank", "kind": "item", "amount": 1.0}]}, {"id": 136, "name": "spidertron", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "exoskeleton-equipment", "kind": "item", "amount": 4.0}, {"name": "fission-reactor-equipment", "kind": "item", "amount": 2.0}, {"name": "rocket-launcher", "kind": "item", "amount": 4.0}, {"name": "processing-unit", "kind": "item", "amount": 16.0}, {"name": "low-density-structure", "kind": "item", "amount": 150.0}, {"name": "radar", "kind": "item", "amount": 2.0}, {"name": "efficiency-module-3", "kind": "item", "amount": 2.0}, {"name": "raw-fish", "kind": "item", "amount": 1.0}], "results": [{"name": "spidertron", "kind": "item", "amount": 1.0}]}, {"id": 137, "name": "fluid-wagon", "pack": "base", "energy": 1.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "steel-plate", "kind": "item", "amount": 16.0}, {"name": "pipe", "kind": "item", "amount": 8.0}, {"name": "storage-tank", "kind": "item", "amount": 1.0}], "results": [{"name": "fluid-wagon", "kind": "item", "amount": 1.0}]}, {"id": 138, "name": "artillery-wagon", "pack": "base", "energy": 4.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 64.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "steel-plate", "kind": "item", "amount": 40.0}, {"name": "pipe", "kind": "item", "amount": 16.0}, {"name": "advanced-circuit", "kind": "item", "amount": 20.0}], "results": [{"name": "artillery-wagon", "kind": "item", "amount": 1.0}]}, {"id": 139, "name": "modular-armor", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 30.0}, {"name": "steel-plate", "kind": "item", "amount": 50.0}], "results": [{"name": "modular-armor", "kind": "item", "amount": 1.0}]}, {"id": 140, "name": "power-armor", "pack": "base", "energy": 20.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 40.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 40.0}], "results": [{"name": "power-armor", "kind": "item", "amount": 1.0}]}, {"id": 141, "name": "power-armor-mk2", "pack": "base", "energy": 25.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "efficiency-module-2", "kind": "item", "amount": 25.0}, {"name": "speed-module-2", "kind": "item", "amount": 25.0}, {"name": "processing-unit", "kind": "item", "amount": 60.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 40.0}, {"name": "low-density-structure", "kind": "item", "amount": 30.0}], "results": [{"name": "power-armor-mk2", "kind": "item", "amount": 1.0}]}, {"id": 142, "name": "flamethrower", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}], "results": [{"name": "flamethrower", "kind": "item", "amount": 1.0}]}, {"id": 143, "name": "land-mine", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "explosives", "kind": "item", "amount": 2.0}], "results": [{"name": "land-mine", "kind": "item", "amount": 4.0}]}, {"id": 144, "name": "rocket-launcher", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 5.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "rocket-launcher", "kind": "item", "amount": 1.0}]}, {"id": 145, "name": "combat-shotgun", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 15.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "copper-plate", "kind": "item", "amount": 10.0}, {"name": "wood", "kind": "item", "amount": 10.0}], "results": [{"name": "combat-shotgun", "kind": "item", "amount": 1.0}]}, {"id": 146, "name": "chemical-science-pack", "pack": "base", "energy": 24.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 2.0}, {"name": "advanced-circuit", "kind": "item", "amount": 3.0}, {"name": "sulfur", "kind": "item", "amount": 1.0}], "results": [{"name": "chemical-science-pack", "kind": "item", "amount": 2.0}]}, {"id": 147, "name": "military-science-pack", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "piercing-rounds-magazine", "kind": "item", "amount": 1.0}, {"name": "grenade", "kind": "item", "amount": 1.0}, {"name": "stone-wall", "kind": "item", "amount": 2.0}], "results": [{"name": "military-science-pack", "kind": "item", "amount": 2.0}]}, {"id": 148, "name": "production-science-pack", "pack": "base", "energy": 21.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electric-furnace", "kind": "item", "amount": 1.0}, {"name": "productivity-module", "kind": "item", "amount": 1.0}, {"name": "rail", "kind": "item", "amount": 30.0}], "results": [{"name": "production-science-pack", "kind": "item", "amount": 3.0}]}, {"id": 149, "name": "utility-science-pack", "pack": "base", "energy": 21.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "low-density-structure", "kind": "item", "amount": 3.0}, {"name": "processing-unit", "kind": "item", "amount": 2.0}, {"name": "flying-robot-frame", "kind": "item", "amount": 1.0}], "results": [{"name": "utility-science-pack", "kind": "item", "amount": 3.0}]}, {"id": 150, "name": "express-underground-belt", "pack": "base", "energy": 2.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 80.0}, {"name": "fast-underground-belt", "kind": "item", "amount": 2.0}, {"name": "lubricant", "kind": "fluid", "amount": 40.0}], "results": [{"name": "express-underground-belt", "kind": "item", "amount": 2.0}]}, {"id": 153, "name": "express-splitter", "pack": "base", "energy": 2.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "fast-splitter", "kind": "item", "amount": 1.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "advanced-circuit", "kind": "item", "amount": 10.0}, {"name": "lubricant", "kind": "fluid", "amount": 80.0}], "results": [{"name": "express-splitter", "kind": "item", "amount": 1.0}]}, {"id": 154, "name": "advanced-circuit", "pack": "base", "energy": 6.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 2.0}, {"name": "plastic-bar", "kind": "item", "amount": 2.0}, {"name": "copper-cable", "kind": "item", "amount": 4.0}], "results": [{"name": "advanced-circuit", "kind": "item", "amount": 1.0}]}, {"id": 155, "name": "processing-unit", "pack": "base", "energy": 10.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 20.0}, {"name": "advanced-circuit", "kind": "item", "amount": 2.0}, {"name": "sulfuric-acid", "kind": "fluid", "amount": 5.0}], "results": [{"name": "processing-unit", "kind": "item", "amount": 1.0}]}, {"id": 156, "name": "logistic-robot", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "flying-robot-frame", "kind": "item", "amount": 1.0}, {"name": "advanced-circuit", "kind": "item", "amount": 2.0}], "results": [{"name": "logistic-robot", "kind": "item", "amount": 1.0}]}, {"id": 157, "name": "construction-robot", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "flying-robot-frame", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 2.0}], "results": [{"name": "construction-robot", "kind": "item", "amount": 1.0}]}, {"id": 158, "name": "passive-provider-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-chest", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}], "results": [{"name": "passive-provider-chest", "kind": "item", "amount": 1.0}]}, {"id": 159, "name": "active-provider-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-chest", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}], "results": [{"name": "active-provider-chest", "kind": "item", "amount": 1.0}]}, {"id": 160, "name": "storage-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-chest", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}], "results": [{"name": "storage-chest", "kind": "item", "amount": 1.0}]}, {"id": 161, "name": "buffer-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-chest", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}], "results": [{"name": "buffer-chest", "kind": "item", "amount": 1.0}]}, {"id": 162, "name": "requester-chest", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-chest", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}], "results": [{"name": "requester-chest", "kind": "item", "amount": 1.0}]}, {"id": 163, "name": "rocket-silo", "pack": "base", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 1000.0}, {"name": "concrete", "kind": "item", "amount": 1000.0}, {"name": "pipe", "kind": "item", "amount": 100.0}, {"name": "processing-unit", "kind": "item", "amount": 200.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 200.0}], "results": [{"name": "rocket-silo", "kind": "item", "amount": 1.0}]}, {"id": 164, "name": "cargo-landing-pad", "pack": "base", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "concrete", "kind": "item", "amount": 200.0}, {"name": "steel-plate", "kind": "item", "amount": 25.0}, {"name": "processing-unit", "kind": "item", "amount": 10.0}], "results": [{"name": "cargo-landing-pad", "kind": "item", "amount": 1.0}]}, {"id": 165, "name": "roboport", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 45.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 45.0}, {"name": "advanced-circuit", "kind": "item", "amount": 45.0}], "results": [{"name": "roboport", "kind": "item", "amount": 1.0}]}, {"id": 166, "name": "substation", "pack": "base", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "copper-cable", "kind": "item", "amount": 6.0}], "results": [{"name": "substation", "kind": "item", "amount": 1.0}]}, {"id": 167, "name": "accumulator", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 2.0}, {"name": "battery", "kind": "item", "amount": 5.0}], "results": [{"name": "accumulator", "kind": "item", "amount": 1.0}]}, {"id": 168, "name": "electric-furnace", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "stone-brick", "kind": "item", "amount": 10.0}], "results": [{"name": "electric-furnace", "kind": "item", "amount": 1.0}]}, {"id": 169, "name": "beacon", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 20.0}, {"name": "advanced-circuit", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "copper-cable", "kind": "item", "amount": 10.0}], "results": [{"name": "beacon", "kind": "item", "amount": 1.0}]}, {"id": 170, "name": "pumpjack", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "pipe", "kind": "item", "amount": 10.0}], "results": [{"name": "pumpjack", "kind": "item", "amount": 1.0}]}, {"id": 171, "name": "oil-refinery", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 15.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 10.0}, {"name": "stone-brick", "kind": "item", "amount": 10.0}, {"name": "electronic-circuit", "kind": "item", "amount": 10.0}, {"name": "pipe", "kind": "item", "amount": 10.0}], "results": [{"name": "oil-refinery", "kind": "item", "amount": 1.0}]}, {"id": 172, "name": "electric-engine-unit", "pack": "base", "energy": 10.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 1.0}, {"name": "lubricant", "kind": "fluid", "amount": 15.0}, {"name": "electronic-circuit", "kind": "item", "amount": 2.0}], "results": [{"name": "electric-engine-unit", "kind": "item", "amount": 1.0}]}, {"id": 173, "name": "flying-robot-frame", "pack": "base", "energy": 20.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electric-engine-unit", "kind": "item", "amount": 1.0}, {"name": "battery", "kind": "item", "amount": 2.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}], "results": [{"name": "flying-robot-frame", "kind": "item", "amount": 1.0}]}, {"id": 174, "name": "explosives", "pack": "base", "energy": 4.0, "categories": ["chemistry"], "subgroup": "other", "ingredients": [{"name": "sulfur", "kind": "item", "amount": 1.0}, {"name": "coal", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 10.0}], "results": [{"name": "explosives", "kind": "item", "amount": 2.0}]}, {"id": 175, "name": "battery", "pack": "base", "energy": 4.0, "categories": ["chemistry"], "subgroup": "other", "ingredients": [{"name": "sulfuric-acid", "kind": "fluid", "amount": 20.0}, {"name": "iron-plate", "kind": "item", "amount": 1.0}, {"name": "copper-plate", "kind": "item", "amount": 1.0}], "results": [{"name": "battery", "kind": "item", "amount": 1.0}]}, {"id": 176, "name": "storage-tank", "pack": "base", "energy": 3.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 5.0}], "results": [{"name": "storage-tank", "kind": "item", "amount": 1.0}]}, {"id": 177, "name": "pump", "pack": "base", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "engine-unit", "kind": "item", "amount": 1.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "pipe", "kind": "item", "amount": 1.0}], "results": [{"name": "pump", "kind": "item", "amount": 1.0}]}, {"id": 178, "name": "chemical-plant", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 5.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "pipe", "kind": "item", "amount": 5.0}], "results": [{"name": "chemical-plant", "kind": "item", "amount": 1.0}]}, {"id": 179, "name": "low-density-structure", "pack": "base", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "copper-plate", "kind": "item", "amount": 20.0}, {"name": "plastic-bar", "kind": "item", "amount": 5.0}], "results": [{"name": "low-density-structure", "kind": "item", "amount": 1.0}]}, {"id": 180, "name": "rocket-fuel", "pack": "base", "energy": 15.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "solid-fuel", "kind": "item", "amount": 10.0}, {"name": "light-oil", "kind": "fluid", "amount": 10.0}], "results": [{"name": "rocket-fuel", "kind": "item", "amount": 1.0}]}, {"id": 181, "name": "rocket-part", "pack": "base", "energy": 3.0, "categories": ["rocket-building"], "subgroup": "other", "ingredients": [{"name": "processing-unit", "kind": "item", "amount": 10.0}, {"name": "low-density-structure", "kind": "item", "amount": 10.0}, {"name": "rocket-fuel", "kind": "item", "amount": 10.0}], "results": [{"name": "rocket-part", "kind": "item", "amount": 1.0}]}, {"id": 182, "name": "satellite", "pack": "base", "energy": 5.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "low-density-structure", "kind": "item", "amount": 100.0}, {"name": "solar-panel", "kind": "item", "amount": 100.0}, {"name": "accumulator", "kind": "item", "amount": 100.0}, {"name": "radar", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 100.0}, {"name": "rocket-fuel", "kind": "item", "amount": 50.0}], "results": [{"name": "satellite", "kind": "item", "amount": 1.0}]}, {"id": 183, "name": "nuclear-reactor", "pack": "base", "energy": 8.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "concrete", "kind": "item", "amount": 500.0}, {"name": "steel-plate", "kind": "item", "amount": 500.0}, {"name": "advanced-circuit", "kind": "item", "amount": 500.0}, {"name": "copper-plate", "kind": "item", "amount": 500.0}], "results": [{"name": "nuclear-reactor", "kind": "item", "amount": 1.0}]}, {"id": 184, "name": "centrifuge", "pack": "base", "energy": 4.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "concrete", "kind": "item", "amount": 100.0}, {"name": "steel-plate", "kind": "item", "amount": 50.0}, {"name": "advanced-circuit", "kind": "item", "amount": 100.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 100.0}], "results": [{"name": "centrifuge", "kind": "item", "amount": 1.0}]}, {"id": 185, "name": "uranium-processing", "pack": "base", "energy": 12.0, "categories": ["centrifuging"], "subgroup": "uranium-processing", "ingredients": [{"name": "uranium-ore", "kind": "item", "amount": 10.0}], "results": [{"name": "uranium-235", "kind": "item", "amount": 1.0}, {"name": "uranium-238", "kind": "item", "amount": 1.0}]}, {"id": 186, "name": "kovarex-enrichment-process", "pack": "base", "energy": 60.0, "categories": ["centrifuging"], "subgroup": "uranium-processing", "ingredients": [{"name": "uranium-235", "kind": "item", "amount": 40.0}, {"name": "uranium-238", "kind": "item", "amount": 5.0}], "results": [{"name": "uranium-235", "kind": "item", "amount": 41.0}, {"name": "uranium-238", "kind": "item", "amount": 2.0}]}, {"id": 187, "name": "nuclear-fuel", "pack": "base", "energy": 90.0, "categories": ["centrifuging"], "subgroup": "uranium-processing", "ingredients": [{"name": "uranium-235", "kind": "item", "amount": 1.0}, {"name": "rocket-fuel", "kind": "item", "amount": 1.0}], "results": [{"name": "nuclear-fuel", "kind": "item", "amount": 1.0}]}, {"id": 188, "name": "nuclear-fuel-reprocessing", "pack": "base", "energy": 60.0, "categories": ["centrifuging"], "subgroup": "uranium-processing", "ingredients": [{"name": "depleted-uranium-fuel-cell", "kind": "item", "amount": 5.0}], "results": [{"name": "uranium-238", "kind": "item", "amount": 3.0}]}, {"id": 189, "name": "uranium-fuel-cell", "pack": "base", "energy": 10.0, "categories": ["crafting"], "subgroup": "uranium-processing", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 10.0}, {"name": "uranium-235", "kind": "item", "amount": 1.0}, {"name": "uranium-238", "kind": "item", "amount": 19.0}], "results": [{"name": "uranium-fuel-cell", "kind": "item", "amount": 10.0}]}, {"id": 190, "name": "heat-exchanger", "pack": "base", "energy": 3.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "copper-plate", "kind": "item", "amount": 100.0}, {"name": "pipe", "kind": "item", "amount": 10.0}], "results": [{"name": "heat-exchanger", "kind": "item", "amount": 1.0}]}, {"id": 191, "name": "heat-pipe", "pack": "base", "energy": 1.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "copper-plate", "kind": "item", "amount": 20.0}], "results": [{"name": "heat-pipe", "kind": "item", "amount": 1.0}]}, {"id": 192, "name": "steam-turbine", "pack": "base", "energy": 3.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-gear-wheel", "kind": "item", "amount": 50.0}, {"name": "copper-plate", "kind": "item", "amount": 50.0}, {"name": "pipe", "kind": "item", "amount": 20.0}], "results": [{"name": "steam-turbine", "kind": "item", "amount": 1.0}]}, {"id": 193, "name": "simple-coal-liquefaction", "pack": "space-age", "energy": 5.0, "categories": ["oil-processing"], "subgroup": "fluid-recipes", "ingredients": [{"name": "coal", "kind": "item", "amount": 10.0}, {"name": "calcite", "kind": "item", "amount": 2.0}, {"name": "sulfuric-acid", "kind": "fluid", "amount": 25.0}], "results": [{"name": "heavy-oil", "kind": "fluid", "amount": 50.0}]}, {"id": 194, "name": "yumako-processing", "pack": "space-age", "energy": 1.0, "categories": ["organic", "crafting"], "subgroup": "agriculture-processes", "ingredients": [{"name": "yumako", "kind": "item", "amount": 1.0}], "results": [{"name": "yumako-seed", "kind": "item", "amount": 1.0}, {"name": "yumako-mash", "kind": "item", "amount": 2.0}]}, {"id": 195, "name": "jellynut-processing", "pack": "space-age", "energy": 1.0, "categories": ["organic", "crafting"], "subgroup": "agriculture-processes", "ingredients": [{"name": "jellynut", "kind": "item", "amount": 1.0}], "results": [{"name": "jellynut-seed", "kind": "item", "amount": 1.0}, {"name": "jelly", "kind": "item", "amount": 4.0}]}, {"id": 196, "name": "copper-bacteria", "pack": "space-age", "energy": 1.0, "categories": ["organic", "crafting"], "subgroup": "agriculture-processes", "ingredients": [{"name": "yumako-mash", "kind": "item", "amount": 3.0}], "results": [{"name": "copper-bacteria", "kind": "item", "amount": 1.0}, {"name": "spoilage", "kind": "item", "amount": 1.0}]}, {"id": 197, "name": "copper-bacteria-cultivation", "pack": "space-age", "energy": 4.0, "categories": ["organic"], "subgroup": "agriculture-processes", "ingredients": [{"name": "copper-bacteria", "kind": "item", "amount": 1.0}, {"name": "bioflux", "kind": "item", "amount": 1.0}], "results": [{"name": "copper-bacteria", "kind": "item", "amount": 4.0}]}, {"id": 198, "name": "iron-bacteria", "pack": "space-age", "energy": 1.0, "categories": ["organic", "crafting"], "subgroup": "agriculture-processes", "ingredients": [{"name": "jelly", "kind": "item", "amount": 6.0}], "results": [{"name": "iron-bacteria", "kind": "item", "amount": 1.0}, {"name": "spoilage", "kind": "item", "amount": 4.0}]}, {"id": 199, "name": "iron-bacteria-cultivation", "pack": "space-age", "energy": 4.0, "categories": ["organic"], "subgroup": "agriculture-processes", "ingredients": [{"name": "iron-bacteria", "kind": "item", "amount": 1.0}, {"name": "bioflux", "kind": "item", "amount": 1.0}], "results": [{"name": "iron-bacteria", "kind": "item", "amount": 4.0}]}, {"id": 200, "name": "artificial-yumako-soil", "pack": "space-age", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "yumako-seed", "kind": "item", "amount": 2.0}, {"name": "nutrients", "kind": "item", "amount": 50.0}, {"name": "landfill", "kind": "item", "amount": 5.0}], "results": [{"name": "artificial-yumako-soil", "kind": "item", "amount": 10.0}]}, {"id": 201, "name": "overgrowth-yumako-soil", "pack": "space-age", "energy": 10.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "artificial-yumako-soil", "kind": "item", "amount": 2.0}, {"name": "yumako-seed", "kind": "item", "amount": 5.0}, {"name": "biter-egg", "kind": "item", "amount": 10.0}, {"name": "spoilage", "kind": "item", "amount": 50.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "overgrowth-yumako-soil", "kind": "item", "amount": 1.0}]}, {"id": 202, "name": "artificial-jellynut-soil", "pack": "space-age", "energy": 2.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "jellynut-seed", "kind": "item", "amount": 2.0}, {"name": "nutrients", "kind": "item", "amount": 50.0}, {"name": "landfill", "kind": "item", "amount": 5.0}], "results": [{"name": "artificial-jellynut-soil", "kind": "item", "amount": 10.0}]}, {"id": 203, "name": "overgrowth-jellynut-soil", "pack": "space-age", "energy": 10.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "artificial-jellynut-soil", "kind": "item", "amount": 2.0}, {"name": "jellynut-seed", "kind": "item", "amount": 5.0}, {"name": "biter-egg", "kind": "item", "amount": 10.0}, {"name": "spoilage", "kind": "item", "amount": 50.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "overgrowth-jellynut-soil", "kind": "item", "amount": 1.0}]}, {"id": 204, "name": "nutrients-from-spoilage", "pack": "space-age", "energy": 2.0, "categories": ["organic", "crafting"], "subgroup": "agriculture-processes", "ingredients": [{"name": "spoilage", "kind": "item", "amount": 10.0}], "results": [{"name": "nutrients", "kind": "item", "amount": 1.0}]}, {"id": 205, "name": "nutrients-from-yumako-mash", "pack": "space-age", "energy": 4.0, "categories": ["organic"], "subgroup": "agriculture-processes", "ingredients": [{"name": "yumako-mash", "kind": "item", "amount": 4.0}], "results": [{"name": "nutrients", "kind": "item", "amount": 6.0}]}, {"id": 206, "name": "nutrients-from-bioflux", "pack": "space-age", "energy": 2.0, "categories": ["organic"], "subgroup": "agriculture-processes", "ingredients": [{"name": "bioflux", "kind": "item", "amount": 5.0}], "results": [{"name": "nutrients", "kind": "item", "amount": 40.0}]}, {"id": 207, "name": "pentapod-egg", "pack": "space-age", "energy": 15.0, "categories": ["organic"], "subgroup": "agriculture-processes", "ingredients": [{"name": "pentapod-egg", "kind": "item", "amount": 1.0}, {"name": "nutrients", "kind": "item", "amount": 30.0}, {"name": "water", "kind": "fluid", "amount": 60.0}], "results": [{"name": "pentapod-egg", "kind": "item", "amount": 2.0}]}, {"id": 208, "name": "rocket-fuel-from-jelly", "pack": "space-age", "energy": 10.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "water", "kind": "fluid", "amount": 30.0}, {"name": "jelly", "kind": "item", "amount": 30.0}, {"name": "bioflux", "kind": "item", "amount": 2.0}], "results": [{"name": "rocket-fuel", "kind": "item", "amount": 1.0}]}, {"id": 209, "name": "bioflux", "pack": "space-age", "energy": 6.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "yumako-mash", "kind": "item", "amount": 15.0}, {"name": "jelly", "kind": "item", "amount": 12.0}], "results": [{"name": "bioflux", "kind": "item", "amount": 4.0}]}, {"id": 210, "name": "bioplastic", "pack": "space-age", "energy": 2.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "bioflux", "kind": "item", "amount": 1.0}, {"name": "yumako-mash", "kind": "item", "amount": 4.0}], "results": [{"name": "plastic-bar", "kind": "item", "amount": 3.0}]}, {"id": 211, "name": "biosulfur", "pack": "space-age", "energy": 2.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "spoilage", "kind": "item", "amount": 5.0}, {"name": "bioflux", "kind": "item", "amount": 1.0}], "results": [{"name": "sulfur", "kind": "item", "amount": 2.0}]}, {"id": 212, "name": "biolubricant", "pack": "space-age", "energy": 3.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "jelly", "kind": "item", "amount": 60.0}], "results": [{"name": "lubricant", "kind": "fluid", "amount": 20.0}]}, {"id": 213, "name": "carbon-fiber", "pack": "space-age", "energy": 5.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "yumako-mash", "kind": "item", "amount": 10.0}, {"name": "carbon", "kind": "item", "amount": 1.0}], "results": [{"name": "carbon-fiber", "kind": "item", "amount": 1.0}]}, {"id": 214, "name": "toolbelt-equipment", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "advanced-circuit", "kind": "item", "amount": 3.0}, {"name": "carbon-fiber", "kind": "item", "amount": 10.0}], "results": [{"name": "toolbelt-equipment", "kind": "item", "amount": 1.0}]}, {"id": 215, "name": "battery-mk3-equipment", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "battery-mk2-equipment", "kind": "item", "amount": 5.0}, {"name": "supercapacitor", "kind": "item", "amount": 10.0}], "results": [{"name": "battery-mk3-equipment", "kind": "item", "amount": 1.0}]}, {"id": 216, "name": "space-platform-foundation", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "copper-cable", "kind": "item", "amount": 20.0}], "results": [{"name": "space-platform-foundation", "kind": "item", "amount": 1.0}]}, {"id": 217, "name": "stack-inserter", "pack": "space-age", "energy": 0.5, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "bulk-inserter", "kind": "item", "amount": 1.0}, {"name": "processing-unit", "kind": "item", "amount": 1.0}, {"name": "carbon-fiber", "kind": "item", "amount": 2.0}, {"name": "jelly", "kind": "item", "amount": 10.0}], "results": [{"name": "stack-inserter", "kind": "item", "amount": 1.0}]}, {"id": 218, "name": "rocket-turret", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "rocket-launcher", "kind": "item", "amount": 4.0}, {"name": "processing-unit", "kind": "item", "amount": 4.0}, {"name": "carbon-fiber", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "iron-gear-wheel", "kind": "item", "amount": 20.0}], "results": [{"name": "rocket-turret", "kind": "item", "amount": 1.0}]}, {"id": 222, "name": "space-platform-starter-pack", "pack": "space-age", "energy": 60.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "space-platform-foundation", "kind": "item", "amount": 60.0}, {"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "processing-unit", "kind": "item", "amount": 20.0}], "results": [{"name": "space-platform-starter-pack", "kind": "item", "amount": 1.0}]}, {"id": 223, "name": "cargo-bay", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 20.0}, {"name": "low-density-structure", "kind": "item", "amount": 20.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "cargo-bay", "kind": "item", "amount": 1.0}]}, {"id": 224, "name": "landing-pad-unloading-bay", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "cargo-bay", "kind": "item", "amount": 1.0}, {"name": "steel-chest", "kind": "item", "amount": 4.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 15.0}, {"name": "processing-unit", "kind": "item", "amount": 8.0}], "results": [{"name": "landing-pad-unloading-bay", "kind": "item", "amount": 1.0}]}, {"id": 225, "name": "asteroid-collector", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "low-density-structure", "kind": "item", "amount": 20.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 8.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "asteroid-collector", "kind": "item", "amount": 1.0}]}, {"id": 226, "name": "crusher", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "low-density-structure", "kind": "item", "amount": 20.0}, {"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 10.0}], "results": [{"name": "crusher", "kind": "item", "amount": 1.0}]}, {"id": 227, "name": "thruster", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "processing-unit", "kind": "item", "amount": 10.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "thruster", "kind": "item", "amount": 1.0}]}, {"id": 228, "name": "space-science-pack", "pack": "space-age", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "iron-plate", "kind": "item", "amount": 2.0}, {"name": "carbon", "kind": "item", "amount": 1.0}, {"name": "ice", "kind": "item", "amount": 1.0}], "results": [{"name": "space-science-pack", "kind": "item", "amount": 5.0}]}, {"id": 229, "name": "metallurgic-science-pack", "pack": "space-age", "energy": 10.0, "categories": ["metallurgy"], "subgroup": "other", "ingredients": [{"name": "tungsten-carbide", "kind": "item", "amount": 3.0}, {"name": "tungsten-plate", "kind": "item", "amount": 2.0}, {"name": "molten-copper", "kind": "fluid", "amount": 200.0}], "results": [{"name": "metallurgic-science-pack", "kind": "item", "amount": 1.0}]}, {"id": 230, "name": "agricultural-science-pack", "pack": "space-age", "energy": 4.0, "categories": ["organic"], "subgroup": "science-pack", "ingredients": [{"name": "bioflux", "kind": "item", "amount": 1.0}, {"name": "pentapod-egg", "kind": "item", "amount": 1.0}], "results": [{"name": "agricultural-science-pack", "kind": "item", "amount": 1.0}]}, {"id": 231, "name": "electromagnetic-science-pack", "pack": "space-age", "energy": 10.0, "categories": ["electromagnetics"], "subgroup": "other", "ingredients": [{"name": "supercapacitor", "kind": "item", "amount": 1.0}, {"name": "accumulator", "kind": "item", "amount": 1.0}, {"name": "electrolyte", "kind": "fluid", "amount": 25.0}, {"name": "holmium-solution", "kind": "fluid", "amount": 25.0}], "results": [{"name": "electromagnetic-science-pack", "kind": "item", "amount": 1.0}]}, {"id": 232, "name": "cryogenic-science-pack", "pack": "space-age", "energy": 20.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "ice", "kind": "item", "amount": 3.0}, {"name": "lithium-plate", "kind": "item", "amount": 1.0}, {"name": "fluoroketone-cold", "kind": "fluid", "amount": 6.0}], "results": [{"name": "cryogenic-science-pack", "kind": "item", "amount": 1.0}, {"name": "fluoroketone-hot", "kind": "fluid", "amount": 3.0}]}, {"id": 233, "name": "metallic-asteroid-crushing", "pack": "space-age", "energy": 2.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "iron-ore", "kind": "item", "amount": 20.0}, {"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 234, "name": "carbonic-asteroid-crushing", "pack": "space-age", "energy": 2.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "carbon", "kind": "item", "amount": 10.0}, {"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 235, "name": "oxide-asteroid-crushing", "pack": "space-age", "energy": 2.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "ice", "kind": "item", "amount": 5.0}, {"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 236, "name": "advanced-metallic-asteroid-crushing", "pack": "space-age", "energy": 5.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "iron-ore", "kind": "item", "amount": 10.0}, {"name": "copper-ore", "kind": "item", "amount": 4.0}, {"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 237, "name": "advanced-carbonic-asteroid-crushing", "pack": "space-age", "energy": 5.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "carbon", "kind": "item", "amount": 5.0}, {"name": "sulfur", "kind": "item", "amount": 2.0}, {"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 238, "name": "advanced-oxide-asteroid-crushing", "pack": "space-age", "energy": 5.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "ice", "kind": "item", "amount": 3.0}, {"name": "calcite", "kind": "item", "amount": 2.0}, {"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 239, "name": "metallic-asteroid-reprocessing", "pack": "space-age", "energy": 2.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}, {"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}, {"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 240, "name": "carbonic-asteroid-reprocessing", "pack": "space-age", "energy": 2.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}, {"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}, {"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 241, "name": "oxide-asteroid-reprocessing", "pack": "space-age", "energy": 1.0, "categories": ["crushing"], "subgroup": "space-crushing", "ingredients": [{"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}], "results": [{"name": "oxide-asteroid-chunk", "kind": "item", "amount": 1.0}, {"name": "metallic-asteroid-chunk", "kind": "item", "amount": 1.0}, {"name": "carbonic-asteroid-chunk", "kind": "item", "amount": 1.0}]}, {"id": 242, "name": "thruster-fuel", "pack": "space-age", "energy": 2.0, "categories": ["chemistry"], "subgroup": "space-processing", "ingredients": [{"name": "carbon", "kind": "item", "amount": 2.0}, {"name": "water", "kind": "fluid", "amount": 10.0}], "results": [{"name": "thruster-fuel", "kind": "fluid", "amount": 75.0}]}, {"id": 243, "name": "thruster-oxidizer", "pack": "space-age", "energy": 2.0, "categories": ["chemistry"], "subgroup": "space-processing", "ingredients": [{"name": "iron-ore", "kind": "item", "amount": 2.0}, {"name": "water", "kind": "fluid", "amount": 10.0}], "results": [{"name": "thruster-oxidizer", "kind": "fluid", "amount": 75.0}]}, {"id": 244, "name": "ice-melting", "pack": "space-age", "energy": 1.0, "categories": ["chemistry"], "subgroup": "fluid-recipes", "ingredients": [{"name": "ice", "kind": "item", "amount": 1.0}], "results": [{"name": "water", "kind": "fluid", "amount": 20.0}]}, {"id": 245, "name": "advanced-thruster-fuel", "pack": "space-age", "energy": 10.0, "categories": ["chemistry"], "subgroup": "space-processing", "ingredients": [{"name": "carbon", "kind": "item", "amount": 2.0}, {"name": "calcite", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "thruster-fuel", "kind": "fluid", "amount": 1500.0}]}, {"id": 246, "name": "advanced-thruster-oxidizer", "pack": "space-age", "energy": 10.0, "categories": ["chemistry"], "subgroup": "space-processing", "ingredients": [{"name": "iron-ore", "kind": "item", "amount": 2.0}, {"name": "calcite", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "thruster-oxidizer", "kind": "fluid", "amount": 1500.0}]}, {"id": 247, "name": "acid-neutralisation", "pack": "space-age", "energy": 0.5, "categories": ["chemistry", "cryogenics"], "subgroup": "fluid-recipes", "ingredients": [{"name": "calcite", "kind": "item", "amount": 1.0}, {"name": "sulfuric-acid", "kind": "fluid", "amount": 100.0}], "results": [{"name": "steam", "kind": "fluid", "amount": 1000.0}]}, {"id": 248, "name": "steam-condensation", "pack": "space-age", "energy": 1.0, "categories": ["chemistry", "cryogenics"], "subgroup": "fluid-recipes", "ingredients": [{"name": "steam", "kind": "fluid", "amount": 1000.0}], "results": [{"name": "water", "kind": "fluid", "amount": 90.0}]}, {"id": 249, "name": "carbon", "pack": "space-age", "energy": 1.0, "categories": ["chemistry", "cryogenics"], "subgroup": "raw-material", "ingredients": [{"name": "coal", "kind": "item", "amount": 2.0}, {"name": "sulfuric-acid", "kind": "fluid", "amount": 20.0}], "results": [{"name": "carbon", "kind": "item", "amount": 1.0}]}, {"id": 250, "name": "tungsten-carbide", "pack": "space-age", "energy": 1.0, "categories": ["crafting-with-fluid"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "tungsten-ore", "kind": "item", "amount": 2.0}, {"name": "sulfuric-acid", "kind": "fluid", "amount": 10.0}, {"name": "carbon", "kind": "item", "amount": 1.0}], "results": [{"name": "tungsten-carbide", "kind": "item", "amount": 1.0}]}, {"id": 251, "name": "foundry", "pack": "space-age", "energy": 10.0, "categories": ["metallurgy", "crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "tungsten-carbide", "kind": "item", "amount": 50.0}, {"name": "steel-plate", "kind": "item", "amount": 50.0}, {"name": "electronic-circuit", "kind": "item", "amount": 30.0}, {"name": "refined-concrete", "kind": "item", "amount": 20.0}, {"name": "lubricant", "kind": "fluid", "amount": 20.0}], "results": [{"name": "foundry", "kind": "item", "amount": 1.0}]}, {"id": 252, "name": "molten-iron-from-lava", "pack": "space-age", "energy": 16.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "lava", "kind": "fluid", "amount": 500.0}, {"name": "calcite", "kind": "item", "amount": 1.0}], "results": [{"name": "molten-iron", "kind": "fluid", "amount": 250.0}, {"name": "stone", "kind": "item", "amount": 10.0}]}, {"id": 253, "name": "molten-copper-from-lava", "pack": "space-age", "energy": 16.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "lava", "kind": "fluid", "amount": 500.0}, {"name": "calcite", "kind": "item", "amount": 1.0}], "results": [{"name": "molten-copper", "kind": "fluid", "amount": 250.0}, {"name": "stone", "kind": "item", "amount": 15.0}]}, {"id": 254, "name": "iron-ore-melting", "pack": "space-age", "energy": 32.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "iron-ore", "kind": "item", "amount": 50.0}, {"name": "calcite", "kind": "item", "amount": 1.0}], "results": [{"name": "molten-iron", "kind": "fluid", "amount": 500.0}]}, {"id": 255, "name": "copper-ore-melting", "pack": "space-age", "energy": 32.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "copper-ore", "kind": "item", "amount": 50.0}, {"name": "calcite", "kind": "item", "amount": 1.0}], "results": [{"name": "molten-copper", "kind": "fluid", "amount": 500.0}]}, {"id": 256, "name": "casting-iron", "pack": "space-age", "energy": 3.2, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 20.0}], "results": [{"name": "iron-plate", "kind": "item", "amount": 2.0}]}, {"id": 257, "name": "casting-steel", "pack": "space-age", "energy": 3.2, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 30.0}], "results": [{"name": "steel-plate", "kind": "item", "amount": 1.0}]}, {"id": 258, "name": "casting-copper", "pack": "space-age", "energy": 3.2, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-copper", "kind": "fluid", "amount": 20.0}], "results": [{"name": "copper-plate", "kind": "item", "amount": 2.0}]}, {"id": 259, "name": "casting-iron-gear-wheel", "pack": "space-age", "energy": 1.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 10.0}], "results": [{"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}]}, {"id": 260, "name": "casting-iron-stick", "pack": "space-age", "energy": 1.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 20.0}], "results": [{"name": "iron-stick", "kind": "item", "amount": 4.0}]}, {"id": 261, "name": "casting-pipe", "pack": "space-age", "energy": 1.0, "categories": ["metallurgy"], "subgroup": "energy-pipe-distribution", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 10.0}], "results": [{"name": "pipe", "kind": "item", "amount": 1.0}]}, {"id": 262, "name": "casting-pipe-to-ground", "pack": "space-age", "energy": 1.0, "categories": ["metallurgy"], "subgroup": "energy-pipe-distribution", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 50.0}, {"name": "pipe", "kind": "item", "amount": 10.0}], "results": [{"name": "pipe-to-ground", "kind": "item", "amount": 2.0}]}, {"id": 263, "name": "casting-low-density-structure", "pack": "space-age", "energy": 15.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 80.0}, {"name": "molten-copper", "kind": "fluid", "amount": 250.0}, {"name": "plastic-bar", "kind": "item", "amount": 5.0}], "results": [{"name": "low-density-structure", "kind": "item", "amount": 1.0}]}, {"id": 264, "name": "concrete-from-molten-iron", "pack": "space-age", "energy": 10.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-iron", "kind": "fluid", "amount": 20.0}, {"name": "water", "kind": "fluid", "amount": 100.0}, {"name": "stone-brick", "kind": "item", "amount": 5.0}], "results": [{"name": "concrete", "kind": "item", "amount": 10.0}]}, {"id": 265, "name": "casting-copper-cable", "pack": "space-age", "energy": 1.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "molten-copper", "kind": "fluid", "amount": 5.0}], "results": [{"name": "copper-cable", "kind": "item", "amount": 2.0}]}, {"id": 266, "name": "tungsten-plate", "pack": "space-age", "energy": 10.0, "categories": ["metallurgy"], "subgroup": "vulcanus-processes", "ingredients": [{"name": "tungsten-ore", "kind": "item", "amount": 4.0}, {"name": "molten-iron", "kind": "fluid", "amount": 10.0}], "results": [{"name": "tungsten-plate", "kind": "item", "amount": 1.0}]}, {"id": 267, "name": "turbo-transport-belt", "pack": "space-age", "energy": 0.5, "categories": ["metallurgy"], "subgroup": "other", "ingredients": [{"name": "tungsten-plate", "kind": "item", "amount": 5.0}, {"name": "express-transport-belt", "kind": "item", "amount": 1.0}, {"name": "lubricant", "kind": "fluid", "amount": 20.0}], "results": [{"name": "turbo-transport-belt", "kind": "item", "amount": 1.0}]}, {"id": 268, "name": "turbo-underground-belt", "pack": "space-age", "energy": 2.0, "categories": ["metallurgy"], "subgroup": "other", "ingredients": [{"name": "tungsten-plate", "kind": "item", "amount": 40.0}, {"name": "express-underground-belt", "kind": "item", "amount": 2.0}, {"name": "lubricant", "kind": "fluid", "amount": 40.0}], "results": [{"name": "turbo-underground-belt", "kind": "item", "amount": 2.0}]}, {"id": 269, "name": "turbo-splitter", "pack": "space-age", "energy": 2.0, "categories": ["metallurgy"], "subgroup": "other", "ingredients": [{"name": "express-splitter", "kind": "item", "amount": 1.0}, {"name": "tungsten-plate", "kind": "item", "amount": 15.0}, {"name": "processing-unit", "kind": "item", "amount": 2.0}, {"name": "lubricant", "kind": "fluid", "amount": 80.0}], "results": [{"name": "turbo-splitter", "kind": "item", "amount": 1.0}]}, {"id": 271, "name": "big-mining-drill", "pack": "space-age", "energy": 30.0, "categories": ["metallurgy"], "subgroup": "other", "ingredients": [{"name": "electric-mining-drill", "kind": "item", "amount": 1.0}, {"name": "molten-iron", "kind": "fluid", "amount": 200.0}, {"name": "tungsten-carbide", "kind": "item", "amount": 20.0}, {"name": "electric-engine-unit", "kind": "item", "amount": 10.0}, {"name": "advanced-circuit", "kind": "item", "amount": 10.0}], "results": [{"name": "big-mining-drill", "kind": "item", "amount": 1.0}]}, {"id": 272, "name": "mech-armor", "pack": "space-age", "energy": 60.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "power-armor-mk2", "kind": "item", "amount": 1.0}, {"name": "holmium-plate", "kind": "item", "amount": 200.0}, {"name": "processing-unit", "kind": "item", "amount": 100.0}, {"name": "superconductor", "kind": "item", "amount": 50.0}, {"name": "supercapacitor", "kind": "item", "amount": 50.0}], "results": [{"name": "mech-armor", "kind": "item", "amount": 1.0}]}, {"id": 273, "name": "railgun", "pack": "space-age", "energy": 10.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "tungsten-plate", "kind": "item", "amount": 10.0}, {"name": "superconductor", "kind": "item", "amount": 10.0}, {"name": "quantum-processor", "kind": "item", "amount": 20.0}, {"name": "fluoroketone-cold", "kind": "fluid", "amount": 10.0}], "results": [{"name": "railgun", "kind": "item", "amount": 1.0}]}, {"id": 274, "name": "railgun-turret", "pack": "space-age", "energy": 10.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "quantum-processor", "kind": "item", "amount": 100.0}, {"name": "tungsten-plate", "kind": "item", "amount": 30.0}, {"name": "superconductor", "kind": "item", "amount": 50.0}, {"name": "carbon-fiber", "kind": "item", "amount": 20.0}, {"name": "fluoroketone-cold", "kind": "fluid", "amount": 100.0}], "results": [{"name": "railgun-turret", "kind": "item", "amount": 1.0}]}, {"id": 275, "name": "railgun-ammo", "pack": "space-age", "energy": 25.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 5.0}, {"name": "copper-cable", "kind": "item", "amount": 10.0}, {"name": "explosives", "kind": "item", "amount": 2.0}], "results": [{"name": "railgun-ammo", "kind": "item", "amount": 1.0}]}, {"id": 276, "name": "agricultural-tower", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "steel-plate", "kind": "item", "amount": 10.0}, {"name": "electronic-circuit", "kind": "item", "amount": 3.0}, {"name": "spoilage", "kind": "item", "amount": 20.0}, {"name": "landfill", "kind": "item", "amount": 1.0}], "results": [{"name": "agricultural-tower", "kind": "item", "amount": 1.0}]}, {"id": 277, "name": "biochamber", "pack": "space-age", "energy": 20.0, "categories": ["organic", "crafting"], "subgroup": "other", "ingredients": [{"name": "nutrients", "kind": "item", "amount": 5.0}, {"name": "pentapod-egg", "kind": "item", "amount": 1.0}, {"name": "iron-plate", "kind": "item", "amount": 20.0}, {"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "landfill", "kind": "item", "amount": 1.0}], "results": [{"name": "biochamber", "kind": "item", "amount": 1.0}]}, {"id": 278, "name": "burnt-spoilage", "pack": "space-age", "energy": 12.0, "categories": ["organic"], "subgroup": "agriculture-products", "ingredients": [{"name": "spoilage", "kind": "item", "amount": 6.0}], "results": [{"name": "carbon", "kind": "item", "amount": 1.0}]}, {"id": 279, "name": "coal-synthesis", "pack": "space-age", "energy": 2.0, "categories": ["chemistry"], "subgroup": "raw-material", "ingredients": [{"name": "carbon", "kind": "item", "amount": 5.0}, {"name": "sulfur", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 10.0}], "results": [{"name": "coal", "kind": "item", "amount": 1.0}]}, {"id": 280, "name": "capture-robot-rocket", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "flying-robot-frame", "kind": "item", "amount": 1.0}, {"name": "steel-plate", "kind": "item", "amount": 2.0}, {"name": "bioflux", "kind": "item", "amount": 20.0}, {"name": "processing-unit", "kind": "item", "amount": 2.0}], "results": [{"name": "capture-robot-rocket", "kind": "item", "amount": 1.0}]}, {"id": 281, "name": "biolab", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "lab", "kind": "item", "amount": 1.0}, {"name": "biter-egg", "kind": "item", "amount": 10.0}, {"name": "refined-concrete", "kind": "item", "amount": 25.0}, {"name": "capture-robot-rocket", "kind": "item", "amount": 2.0}, {"name": "uranium-235", "kind": "item", "amount": 3.0}], "results": [{"name": "biolab", "kind": "item", "amount": 1.0}]}, {"id": 282, "name": "captive-biter-spawner", "pack": "space-age", "energy": 10.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "biter-egg", "kind": "item", "amount": 10.0}, {"name": "capture-robot-rocket", "kind": "item", "amount": 1.0}, {"name": "uranium-235", "kind": "item", "amount": 15.0}, {"name": "fluoroketone-cold", "kind": "fluid", "amount": 100.0}], "results": [{"name": "captive-biter-spawner", "kind": "item", "amount": 1.0}]}, {"id": 283, "name": "biter-egg", "pack": "space-age", "energy": 10.0, "categories": ["captive-spawner-process"], "subgroup": "other", "ingredients": [], "results": [{"name": "biter-egg", "kind": "item", "amount": 5.0}]}, {"id": 284, "name": "fish-breeding", "pack": "space-age", "energy": 6.0, "categories": ["organic", "chemistry"], "subgroup": "nauvis-agriculture", "ingredients": [{"name": "raw-fish", "kind": "item", "amount": 2.0}, {"name": "nutrients", "kind": "item", "amount": 100.0}, {"name": "water", "kind": "fluid", "amount": 100.0}], "results": [{"name": "raw-fish", "kind": "item", "amount": 3.0}]}, {"id": 285, "name": "nutrients-from-fish", "pack": "space-age", "energy": 2.0, "categories": ["organic", "crafting"], "subgroup": "nauvis-agriculture", "ingredients": [{"name": "raw-fish", "kind": "item", "amount": 1.0}], "results": [{"name": "nutrients", "kind": "item", "amount": 20.0}]}, {"id": 286, "name": "nutrients-from-biter-egg", "pack": "space-age", "energy": 2.0, "categories": ["organic", "crafting"], "subgroup": "nauvis-agriculture", "ingredients": [{"name": "biter-egg", "kind": "item", "amount": 1.0}], "results": [{"name": "nutrients", "kind": "item", "amount": 20.0}]}, {"id": 287, "name": "scrap-recycling", "pack": "space-age", "energy": 0.2, "categories": ["recycling", "hand-crafting"], "subgroup": "fulgora-processes", "ingredients": [{"name": "scrap", "kind": "item", "amount": 1.0}], "results": [{"name": "iron-gear-wheel", "kind": "item", "amount": 1.0}, {"name": "solid-fuel", "kind": "item", "amount": 1.0}, {"name": "concrete", "kind": "item", "amount": 1.0}, {"name": "ice", "kind": "item", "amount": 1.0}, {"name": "steel-plate", "kind": "item", "amount": 1.0}, {"name": "battery", "kind": "item", "amount": 1.0}, {"name": "stone", "kind": "item", "amount": 1.0}, {"name": "advanced-circuit", "kind": "item", "amount": 1.0}, {"name": "copper-cable", "kind": "item", "amount": 1.0}, {"name": "processing-unit", "kind": "item", "amount": 1.0}, {"name": "low-density-structure", "kind": "item", "amount": 1.0}, {"name": "holmium-ore", "kind": "item", "amount": 1.0}]}, {"id": 288, "name": "lightning-rod", "pack": "space-age", "energy": 5.0, "categories": ["electromagnetics", "crafting"], "subgroup": "other", "ingredients": [{"name": "copper-cable", "kind": "item", "amount": 12.0}, {"name": "steel-plate", "kind": "item", "amount": 8.0}, {"name": "stone-brick", "kind": "item", "amount": 4.0}], "results": [{"name": "lightning-rod", "kind": "item", "amount": 1.0}]}, {"id": 289, "name": "holmium-solution", "pack": "space-age", "energy": 10.0, "categories": ["chemistry"], "subgroup": "fulgora-processes", "ingredients": [{"name": "holmium-ore", "kind": "item", "amount": 2.0}, {"name": "stone", "kind": "item", "amount": 1.0}, {"name": "water", "kind": "fluid", "amount": 10.0}], "results": [{"name": "holmium-solution", "kind": "fluid", "amount": 100.0}]}, {"id": 290, "name": "holmium-plate", "pack": "space-age", "energy": 1.0, "categories": ["crafting-with-fluid", "metallurgy"], "subgroup": "fulgora-processes", "ingredients": [{"name": "holmium-solution", "kind": "fluid", "amount": 20.0}], "results": [{"name": "holmium-plate", "kind": "item", "amount": 1.0}]}, {"id": 291, "name": "electromagnetic-plant", "pack": "space-age", "energy": 10.0, "categories": ["electromagnetics", "advanced-crafting"], "subgroup": "other", "ingredients": [{"name": "holmium-plate", "kind": "item", "amount": 150.0}, {"name": "steel-plate", "kind": "item", "amount": 50.0}, {"name": "processing-unit", "kind": "item", "amount": 50.0}, {"name": "refined-concrete", "kind": "item", "amount": 50.0}], "results": [{"name": "electromagnetic-plant", "kind": "item", "amount": 1.0}]}, {"id": 292, "name": "superconductor", "pack": "space-age", "energy": 5.0, "categories": ["electromagnetics"], "subgroup": "fulgora-processes", "ingredients": [{"name": "holmium-plate", "kind": "item", "amount": 1.0}, {"name": "copper-plate", "kind": "item", "amount": 1.0}, {"name": "plastic-bar", "kind": "item", "amount": 1.0}, {"name": "light-oil", "kind": "fluid", "amount": 5.0}], "results": [{"name": "superconductor", "kind": "item", "amount": 2.0}]}, {"id": 293, "name": "supercapacitor", "pack": "space-age", "energy": 10.0, "categories": ["electromagnetics"], "subgroup": "fulgora-processes", "ingredients": [{"name": "holmium-plate", "kind": "item", "amount": 2.0}, {"name": "superconductor", "kind": "item", "amount": 2.0}, {"name": "electronic-circuit", "kind": "item", "amount": 4.0}, {"name": "battery", "kind": "item", "amount": 1.0}, {"name": "electrolyte", "kind": "fluid", "amount": 10.0}], "results": [{"name": "supercapacitor", "kind": "item", "amount": 1.0}]}, {"id": 294, "name": "electrolyte", "pack": "space-age", "energy": 5.0, "categories": ["electromagnetics"], "subgroup": "fulgora-processes", "ingredients": [{"name": "stone", "kind": "item", "amount": 1.0}, {"name": "heavy-oil", "kind": "fluid", "amount": 10.0}, {"name": "holmium-solution", "kind": "fluid", "amount": 10.0}], "results": [{"name": "electrolyte", "kind": "fluid", "amount": 10.0}]}, {"id": 295, "name": "lightning-collector", "pack": "space-age", "energy": 5.0, "categories": ["electromagnetics"], "subgroup": "other", "ingredients": [{"name": "lightning-rod", "kind": "item", "amount": 1.0}, {"name": "supercapacitor", "kind": "item", "amount": 8.0}, {"name": "accumulator", "kind": "item", "amount": 1.0}, {"name": "electrolyte", "kind": "fluid", "amount": 80.0}], "results": [{"name": "lightning-collector", "kind": "item", "amount": 1.0}]}, {"id": 296, "name": "teslagun", "pack": "space-age", "energy": 30.0, "categories": ["electromagnetics"], "subgroup": "other", "ingredients": [{"name": "holmium-plate", "kind": "item", "amount": 10.0}, {"name": "superconductor", "kind": "item", "amount": 10.0}, {"name": "plastic-bar", "kind": "item", "amount": 30.0}, {"name": "electrolyte", "kind": "fluid", "amount": 100.0}], "results": [{"name": "teslagun", "kind": "item", "amount": 1.0}]}, {"id": 297, "name": "tesla-turret", "pack": "space-age", "energy": 30.0, "categories": ["electromagnetics"], "subgroup": "other", "ingredients": [{"name": "teslagun", "kind": "item", "amount": 1.0}, {"name": "supercapacitor", "kind": "item", "amount": 10.0}, {"name": "processing-unit", "kind": "item", "amount": 10.0}, {"name": "superconductor", "kind": "item", "amount": 50.0}, {"name": "electrolyte", "kind": "fluid", "amount": 500.0}], "results": [{"name": "tesla-turret", "kind": "item", "amount": 1.0}]}, {"id": 298, "name": "tesla-ammo", "pack": "space-age", "energy": 30.0, "categories": ["electromagnetics"], "subgroup": "other", "ingredients": [{"name": "supercapacitor", "kind": "item", "amount": 1.0}, {"name": "plastic-bar", "kind": "item", "amount": 1.0}, {"name": "electrolyte", "kind": "fluid", "amount": 10.0}], "results": [{"name": "tesla-ammo", "kind": "item", "amount": 1.0}]}, {"id": 299, "name": "heating-tower", "pack": "space-age", "energy": 10.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "boiler", "kind": "item", "amount": 2.0}, {"name": "heat-pipe", "kind": "item", "amount": 5.0}, {"name": "concrete", "kind": "item", "amount": 20.0}], "results": [{"name": "heating-tower", "kind": "item", "amount": 1.0}]}, {"id": 300, "name": "lithium", "pack": "space-age", "energy": 20.0, "categories": ["chemistry", "cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "holmium-plate", "kind": "item", "amount": 1.0}, {"name": "lithium-brine", "kind": "fluid", "amount": 50.0}, {"name": "ammonia", "kind": "fluid", "amount": 50.0}], "results": [{"name": "lithium", "kind": "item", "amount": 5.0}]}, {"id": 301, "name": "lithium-plate", "pack": "space-age", "energy": 6.4, "categories": ["smelting"], "subgroup": "aquilo-processes", "ingredients": [{"name": "lithium", "kind": "item", "amount": 1.0}], "results": [{"name": "lithium-plate", "kind": "item", "amount": 1.0}]}, {"id": 302, "name": "fluoroketone", "pack": "space-age", "energy": 10.0, "categories": ["cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "fluorine", "kind": "fluid", "amount": 50.0}, {"name": "ammonia", "kind": "fluid", "amount": 50.0}, {"name": "solid-fuel", "kind": "item", "amount": 1.0}, {"name": "lithium", "kind": "item", "amount": 1.0}], "results": [{"name": "fluoroketone-hot", "kind": "fluid", "amount": 50.0}]}, {"id": 303, "name": "fluoroketone-cooling", "pack": "space-age", "energy": 5.0, "categories": ["cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "fluoroketone-hot", "kind": "fluid", "amount": 10.0}], "results": [{"name": "fluoroketone-cold", "kind": "fluid", "amount": 10.0}]}, {"id": 304, "name": "cryogenic-plant", "pack": "space-age", "energy": 10.0, "categories": ["cryogenics", "advanced-crafting"], "subgroup": "other", "ingredients": [{"name": "refined-concrete", "kind": "item", "amount": 40.0}, {"name": "superconductor", "kind": "item", "amount": 20.0}, {"name": "processing-unit", "kind": "item", "amount": 20.0}, {"name": "lithium-plate", "kind": "item", "amount": 20.0}], "results": [{"name": "cryogenic-plant", "kind": "item", "amount": 1.0}]}, {"id": 305, "name": "quantum-processor", "pack": "space-age", "energy": 30.0, "categories": ["electromagnetics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "tungsten-carbide", "kind": "item", "amount": 1.0}, {"name": "processing-unit", "kind": "item", "amount": 1.0}, {"name": "superconductor", "kind": "item", "amount": 1.0}, {"name": "carbon-fiber", "kind": "item", "amount": 1.0}, {"name": "lithium-plate", "kind": "item", "amount": 2.0}, {"name": "fluoroketone-cold", "kind": "fluid", "amount": 10.0}], "results": [{"name": "quantum-processor", "kind": "item", "amount": 1.0}, {"name": "fluoroketone-hot", "kind": "fluid", "amount": 5.0}]}, {"id": 306, "name": "ammoniacal-solution-separation", "pack": "space-age", "energy": 1.0, "categories": ["chemistry", "cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "ammoniacal-solution", "kind": "fluid", "amount": 50.0}], "results": [{"name": "ice", "kind": "item", "amount": 5.0}, {"name": "ammonia", "kind": "fluid", "amount": 50.0}]}, {"id": 307, "name": "fusion-reactor-equipment", "pack": "space-age", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "fission-reactor-equipment", "kind": "item", "amount": 1.0}, {"name": "fusion-power-cell", "kind": "item", "amount": 10.0}, {"name": "tungsten-plate", "kind": "item", "amount": 250.0}, {"name": "carbon-fiber", "kind": "item", "amount": 100.0}, {"name": "supercapacitor", "kind": "item", "amount": 25.0}, {"name": "quantum-processor", "kind": "item", "amount": 250.0}], "results": [{"name": "fusion-reactor-equipment", "kind": "item", "amount": 1.0}]}, {"id": 308, "name": "fusion-power-cell", "pack": "space-age", "energy": 10.0, "categories": ["cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "lithium-plate", "kind": "item", "amount": 5.0}, {"name": "holmium-plate", "kind": "item", "amount": 1.0}, {"name": "ammonia", "kind": "fluid", "amount": 100.0}], "results": [{"name": "fusion-power-cell", "kind": "item", "amount": 1.0}]}, {"id": 309, "name": "fusion-reactor", "pack": "space-age", "energy": 60.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "tungsten-plate", "kind": "item", "amount": 200.0}, {"name": "superconductor", "kind": "item", "amount": 200.0}, {"name": "quantum-processor", "kind": "item", "amount": 250.0}], "results": [{"name": "fusion-reactor", "kind": "item", "amount": 1.0}]}, {"id": 310, "name": "fusion-generator", "pack": "space-age", "energy": 30.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "tungsten-plate", "kind": "item", "amount": 100.0}, {"name": "superconductor", "kind": "item", "amount": 100.0}, {"name": "quantum-processor", "kind": "item", "amount": 50.0}], "results": [{"name": "fusion-generator", "kind": "item", "amount": 1.0}]}, {"id": 311, "name": "ice-platform", "pack": "space-age", "energy": 30.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "ammonia", "kind": "fluid", "amount": 400.0}, {"name": "ice", "kind": "item", "amount": 50.0}], "results": [{"name": "ice-platform", "kind": "item", "amount": 1.0}]}, {"id": 312, "name": "solid-fuel-from-ammonia", "pack": "space-age", "energy": 0.5, "categories": ["chemistry", "cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "ammonia", "kind": "fluid", "amount": 15.0}, {"name": "crude-oil", "kind": "fluid", "amount": 6.0}], "results": [{"name": "solid-fuel", "kind": "item", "amount": 1.0}]}, {"id": 313, "name": "ammonia-rocket-fuel", "pack": "space-age", "energy": 10.0, "categories": ["chemistry", "cryogenics"], "subgroup": "aquilo-processes", "ingredients": [{"name": "solid-fuel", "kind": "item", "amount": 10.0}, {"name": "water", "kind": "fluid", "amount": 50.0}, {"name": "ammonia", "kind": "fluid", "amount": 500.0}], "results": [{"name": "rocket-fuel", "kind": "item", "amount": 1.0}]}, {"id": 314, "name": "foundation", "pack": "space-age", "energy": 30.0, "categories": ["crafting-with-fluid"], "subgroup": "other", "ingredients": [{"name": "tungsten-plate", "kind": "item", "amount": 4.0}, {"name": "lithium-plate", "kind": "item", "amount": 4.0}, {"name": "carbon-fiber", "kind": "item", "amount": 4.0}, {"name": "stone", "kind": "item", "amount": 20.0}, {"name": "fluoroketone-cold", "kind": "fluid", "amount": 20.0}], "results": [{"name": "foundation", "kind": "item", "amount": 1.0}]}, {"id": 315, "name": "promethium-science-pack", "pack": "space-age", "energy": 5.0, "categories": ["cryogenics"], "subgroup": "other", "ingredients": [{"name": "promethium-asteroid-chunk", "kind": "item", "amount": 25.0}, {"name": "quantum-processor", "kind": "item", "amount": 1.0}, {"name": "biter-egg", "kind": "item", "amount": 10.0}], "results": [{"name": "promethium-science-pack", "kind": "item", "amount": 10.0}]}, {"id": 316, "name": "tree-seed", "pack": "space-age", "energy": 2.0, "categories": ["organic", "crafting"], "subgroup": "nauvis-agriculture", "ingredients": [{"name": "wood", "kind": "item", "amount": 2.0}], "results": [{"name": "tree-seed", "kind": "item", "amount": 1.0}]}, {"id": 317, "name": "quality-module", "pack": "quality", "energy": 15.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "electronic-circuit", "kind": "item", "amount": 5.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}], "results": [{"name": "quality-module", "kind": "item", "amount": 1.0}]}, {"id": 318, "name": "quality-module-2", "pack": "quality", "energy": 30.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "quality-module", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "quality-module-2", "kind": "item", "amount": 1.0}]}, {"id": 319, "name": "quality-module-3", "pack": "quality", "energy": 60.0, "categories": ["crafting"], "subgroup": "other", "ingredients": [{"name": "quality-module-2", "kind": "item", "amount": 4.0}, {"name": "advanced-circuit", "kind": "item", "amount": 5.0}, {"name": "processing-unit", "kind": "item", "amount": 5.0}], "results": [{"name": "quality-module-3", "kind": "item", "amount": 1.0}]}], "items": ["accumulator", "active-provider-chest", "advanced-circuit", "agricultural-science-pack", "agricultural-tower", "ammonia", "ammoniacal-solution", "arithmetic-combinator", "artificial-jellynut-soil", "artificial-yumako-soil", "artillery-shell", "artillery-turret", "artillery-wagon", "assembling-machine-1", "assembling-machine-2", "assembling-machine-3", "asteroid-collector", "atomic-bomb", "automation-science-pack", "barrel", "battery", "battery-equipment", "battery-mk2-equipment", "battery-mk3-equipment", "beacon", "belt-immunity-equipment", "big-electric-pole", "big-mining-drill", "biochamber", "bioflux", "biolab", "biter-egg", "boiler", "buffer-chest", "bulk-inserter", "burner-inserter", "burner-mining-drill", "calcite", "cannon-shell", "captive-biter-spawner", "capture-robot-rocket", "car", "carbon", "carbon-fiber", "carbonic-asteroid-chunk", "cargo-bay", "cargo-landing-pad", "cargo-wagon", "centrifuge", "chemical-plant", "chemical-science-pack", "cliff-explosives", "cluster-grenade", "coal", "combat-shotgun", "concrete", "constant-combinator", "construction-robot", "copper-bacteria", "copper-cable", "copper-ore", "copper-plate", "crude-oil", "crusher", "cryogenic-plant", "cryogenic-science-pack", "decider-combinator", "defender-capsule", "depleted-uranium-fuel-cell", "destroyer-capsule", "discharge-defense-equipment", "display-panel", "distractor-capsule", "efficiency-module", "efficiency-module-2", "efficiency-module-3", "electric-engine-unit", "electric-furnace", "electric-mining-drill", "electrolyte", "electromagnetic-plant", "electromagnetic-science-pack", "electronic-circuit", "energy-shield-equipment", "energy-shield-mk2-equipment", "engine-unit", "exoskeleton-equipment", "explosive-cannon-shell", "explosive-rocket", "explosive-uranium-cannon-shell", "explosives", "express-splitter", "express-transport-belt", "express-underground-belt", "fast-inserter", "fast-splitter", "fast-transport-belt", "fast-underground-belt", "firearm-magazine", "fission-reactor-equipment", "flamethrower", "flamethrower-ammo", "flamethrower-turret", "fluid-wagon", "fluorine", "fluoroketone-cold", "fluoroketone-hot", "flying-robot-frame", "foundation", "foundry", "fusion-generator", "fusion-power-cell", "fusion-reactor", "fusion-reactor-equipment", "gate", "grenade", "gun-turret", "hazard-concrete", "heat-exchanger", "heat-pipe", "heating-tower", "heavy-armor", "heavy-oil", "holmium-ore", "holmium-plate", "holmium-solution", "ice", "ice-platform", "inserter", "iron-bacteria", "iron-chest", "iron-gear-wheel", "iron-ore", "iron-plate", "iron-stick", "jelly", "jellynut", "jellynut-seed", "lab", "land-mine", "landfill", "landing-pad-unloading-bay", "laser-turret", "lava", "light-armor", "light-oil", "lightning-collector", "lightning-rod", "lithium", "lithium-brine", "lithium-plate", "locomotive", "logistic-robot", "logistic-science-pack", "long-handed-inserter", "low-density-structure", "lubricant", "mech-armor", "medium-electric-pole", "metallic-asteroid-chunk", "metallurgic-science-pack", "military-science-pack", "modular-armor", "molten-copper", "molten-iron", "night-vision-equipment", "nuclear-fuel", "nuclear-reactor", "nutrients", "offshore-pump", "oil-refinery", "overgrowth-jellynut-soil", "overgrowth-yumako-soil", "oxide-asteroid-chunk", "passive-provider-chest", "pentapod-egg", "personal-laser-defense-equipment", "personal-roboport-equipment", "personal-roboport-mk2-equipment", "petroleum-gas", "piercing-rounds-magazine", "piercing-shotgun-shell", "pipe", "pipe-to-ground", "plastic-bar", "poison-capsule", "power-armor", "power-armor-mk2", "power-switch", "processing-unit", "production-science-pack", "productivity-module", "productivity-module-2", "productivity-module-3", "programmable-speaker", "promethium-asteroid-chunk", "promethium-science-pack", "pump", "pumpjack", "quality-module", "quality-module-2", "quality-module-3", "quantum-processor", "radar", "rail", "rail-chain-signal", "rail-signal", "railgun", "railgun-ammo", "railgun-turret", "raw-fish", "refined-concrete", "refined-hazard-concrete", "repair-pack", "requester-chest", "roboport", "rocket", "rocket-fuel", "rocket-launcher", "rocket-part", "rocket-silo", "rocket-turret", "satellite", "scrap", "selector-combinator", "shotgun", "shotgun-shell", "slowdown-capsule", "small-electric-pole", "small-lamp", "solar-panel", "solar-panel-equipment", "solid-fuel", "space-platform-foundation", "space-platform-starter-pack", "space-science-pack", "speed-module", "speed-module-2", "speed-module-3", "spidertron", "splitter", "spoilage", "stack-inserter", "steam", "steam-engine", "steam-turbine", "steel-chest", "steel-furnace", "steel-plate", "stone", "stone-brick", "stone-furnace", "stone-wall", "storage-chest", "storage-tank", "submachine-gun", "substation", "sulfur", "sulfuric-acid", "supercapacitor", "superconductor", "tank", "tesla-ammo", "tesla-turret", "teslagun", "thruster", "thruster-fuel", "thruster-oxidizer", "toolbelt-equipment", "train-stop", "transport-belt", "tree-seed", "tungsten-carbide", "tungsten-ore", "tungsten-plate", "turbo-splitter", "turbo-transport-belt", "turbo-underground-belt", "underground-belt", "uranium-235", "uranium-238", "uranium-cannon-shell", "uranium-fuel-cell", "uranium-ore", "uranium-rounds-magazine", "utility-science-pack", "water", "wood", "wooden-chest", "yumako", "yumako-mash", "yumako-seed"], "raw_materials": ["iron-ore", "copper-ore", "coal", "stone", "uranium-ore", "crude-oil", "water", "wood", "raw-fish", "calcite", "tungsten-ore", "holmium-ore", "lithium-brine", "fluorine", "lava", "scrap", "jellynut", "yumako"], "basic_plates": ["iron-plate", "copper-plate", "steel-plate", "copper-cable", "electronic-circuit", "plastic-bar", "sulfur", "pipe"], "advanced_items": ["advanced-circuit", "processing-unit", "engine-unit", "electric-engine-unit", "battery", "low-density-structure", "flying-robot-frame"]};
+    let inventory = new Set(['iron-plate', 'copper-plate']);
+
+    // --- Mode Switching ---
+    function switchMode(mode) {
+      document.querySelectorAll('#mode-tabs button').forEach(b => {
+        b.classList.remove('bg-orange-600', 'text-white', 'shadow-sm');
+        b.classList.add('text-[var(--muted-foreground)]');
+      });
+      const activeBtn = document.getElementById('tab-btn-' + mode);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-orange-600', 'text-white', 'shadow-sm');
+        activeBtn.classList.remove('text-[var(--muted-foreground)]');
+      }
+
+      document.getElementById('mode-recipe').classList.toggle('hidden', mode !== 'recipe');
+      document.getElementById('mode-quality').classList.toggle('hidden', mode !== 'quality');
+      document.getElementById('mode-speed').classList.toggle('hidden', mode !== 'speed');
+
+      if (mode === 'quality') calculateQualityTable();
+    }
+
+    // --- Recipe Subtabs ---
+    function switchRecipeSubtab(subtab) {
+      document.querySelectorAll('.recipe-subtab-btn').forEach(b => {
+        b.classList.remove('bg-orange-500', 'text-white', 'shadow');
+        b.classList.add('text-[var(--muted-foreground)]');
+      });
+      const activeBtn = document.getElementById('subtab-btn-' + subtab);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-orange-500', 'text-white', 'shadow');
+        activeBtn.classList.remove('text-[var(--muted-foreground)]');
+      }
+
+      document.getElementById('recipe-subtab-craftable').classList.toggle('hidden', subtab !== 'craftable');
+      document.getElementById('recipe-subtab-need').classList.toggle('hidden', subtab !== 'need');
+      document.getElementById('recipe-subtab-make').classList.toggle('hidden', subtab !== 'make');
+      document.getElementById('recipe-subtab-catalog').classList.toggle('hidden', subtab !== 'catalog');
+
+      if (subtab === 'need') renderDependencyTree();
+      if (subtab === 'make') renderMakeUses();
+      if (subtab === 'catalog') renderCatalogTable();
+    }
+
+    // --- Inventory & Craftable Logic ---
+    function toggleItemInInventory(item) {
+      if (inventory.has(item)) {
+        inventory.delete(item);
+      } else {
+        inventory.add(item);
+      }
+      renderSelectedItems();
+      renderItemPicker();
+      updateCraftableResults();
+    }
+
+    function addItemToInventory(item) {
+      inventory.add(item);
+      renderSelectedItems();
+      renderItemPicker();
+      updateCraftableResults();
+    }
+
+    function removeItemFromInventory(item) {
+      inventory.delete(item);
+      renderSelectedItems();
+      renderItemPicker();
+      updateCraftableResults();
+    }
+
+    function clearInventory() {
+      inventory.clear();
+      renderSelectedItems();
+      renderItemPicker();
+      updateCraftableResults();
+    }
+
+    function applyPreset(type) {
+      if (type === 'raw') {
+        FACTORIO_DATA.raw_materials.forEach(i => inventory.add(i));
+      } else if (type === 'plates') {
+        FACTORIO_DATA.basic_plates.forEach(i => inventory.add(i));
+      } else if (type === 'advanced') {
+        FACTORIO_DATA.advanced_items.forEach(i => inventory.add(i));
+      } else if (type === 'iron_starter') {
+        inventory.clear();
+        ['iron-plate', 'copper-plate'].forEach(i => inventory.add(i));
+      }
+      renderSelectedItems();
+      renderItemPicker();
+      updateCraftableResults();
+    }
+
+    function renderSelectedItems() {
+      const container = document.getElementById('selected-items-container');
+      const countEl = document.getElementById('selected-items-count');
+      countEl.innerText = inventory.size;
+
+      if (inventory.size === 0) {
+        container.innerHTML = '<span class="text-xs text-slate-500 italic p-1">Nenhum item selecionado. Clique em itens abaixo para adicioná-los.</span>';
+        return;
+      }
+
+      container.innerHTML = Array.from(inventory).sort().map(item => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-orange-950/60 border border-orange-700/60 text-orange-200 shadow-sm">
+          <span>${item}</span>
+          <button onclick="removeItemFromInventory('${item}')" class="text-orange-400 hover:text-white font-bold ml-1">×</button>
+        </span>
+      `).join('');
+    }
+
+    function renderItemPicker() {
+      const query = (document.getElementById('item-search-input').value || '').toLowerCase().trim();
+      const picker = document.getElementById('item-picker-list');
+      
+      const filtered = FACTORIO_DATA.items.filter(item => !query || item.toLowerCase().includes(query));
+      
+      picker.innerHTML = filtered.map(item => {
+        const isSelected = inventory.has(item);
+        const isRaw = FACTORIO_DATA.raw_materials.includes(item);
+        return `
+          <button type="button" onclick="toggleItemInInventory('${item}')" class="w-full text-left px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${isSelected ? 'bg-orange-600/30 border border-orange-500 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'}">
+            <span class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-orange-400' : isRaw ? 'bg-amber-500/50' : 'bg-slate-600'}"></span>
+              <span>${item}</span>
+              ${isRaw ? '<span class="text-[10px] text-amber-400/80 px-1 bg-amber-950/40 rounded">raw</span>' : ''}
+            </span>
+            <span class="text-[10px] ${isSelected ? 'text-orange-300' : 'text-slate-500'}">
+              ${isSelected ? '✓ no inventário' : '+ adicionar'}
+            </span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function updateCraftableResults() {
+      const packFilter = document.getElementById('craftable-pack-filter').value;
+      const fullyCraftable = [];
+      const missingOne = [];
+
+      FACTORIO_DATA.recipes.forEach(rec => {
+        if (rec.categories && rec.categories.some(c => c.includes('recycling'))) return;
+        if (packFilter !== 'all' && rec.pack !== packFilter) return;
+        if (!rec.ingredients || rec.ingredients.length === 0) return;
+
+        const reqNames = rec.ingredients.map(i => i.name);
+        const missing = reqNames.filter(name => !inventory.has(name));
+
+        if (missing.length === 0) {
+          fullyCraftable.push(rec);
+        } else if (missing.length === 1) {
+          missingOne.push({ recipe: rec, missingItem: missing[0] });
+        }
+      });
+
+      // Update Badges
+      const countBadge = document.getElementById('craftable-count-badge');
+      countBadge.innerText = `${fullyCraftable.length} item${fullyCraftable.length !== 1 ? 's' : ''} fabricáveis`;
+      
+      const missingBadge = document.getElementById('missing-one-count-badge');
+      missingBadge.innerText = `${missingOne.length} receita${missingOne.length !== 1 ? 's' : ''}`;
+
+      // Render Fully Craftable Grid
+      const grid = document.getElementById('craftable-items-grid');
+      if (fullyCraftable.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full p-8 text-center bg-[#13151b] rounded-xl border border-dashed border-slate-800">
+            <span class="text-3xl block mb-2">🔍</span>
+            <h4 class="text-sm font-semibold text-slate-300 mb-1">Nenhum item direto fabricável</h4>
+            <p class="text-xs text-slate-500 max-w-sm mx-auto">
+              Com os itens atualmente no seu inventário, nenhuma receita completa pode ser produzida. Tente selecionar mais itens como <span class="text-orange-400">iron-plate</span> ou <span class="text-orange-400">copper-plate</span>.
+            </p>
+          </div>
+        `;
+      } else {
+        grid.innerHTML = fullyCraftable.map(rec => {
+          const productsHtml = rec.results.map(r => `
+            <span class="font-bold text-emerald-300 text-sm">${r.name} ${r.amount > 1 ? '<span class="text-xs text-emerald-400">x' + r.amount + '</span>' : ''}</span>
+          `).join(', ');
+
+          const ingsHtml = rec.ingredients.map(i => `
+            <span class="inline-flex items-center text-[11px] bg-slate-800/80 px-2 py-0.5 rounded text-slate-300 border border-slate-700/60">
+              ${i.name} <span class="text-orange-400 ml-1 font-semibold">x${i.amount}</span>
+            </span>
+          `).join(' ');
+
+          const packBadge = rec.pack === 'base' 
+            ? '<span class="text-[10px] bg-blue-950/60 text-blue-300 px-1.5 py-0.5 rounded border border-blue-800/50">Base</span>'
+            : '<span class="text-[10px] bg-purple-950/60 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800/50">' + rec.pack + '</span>';
+
+          const primaryResultName = rec.results[0]?.name || rec.name;
+
+          return `
+            <div class="bg-[#15171e] hover:bg-[#1a1d26] border border-slate-800 hover:border-orange-500/50 rounded-xl p-4 transition-all duration-150 flex flex-col justify-between shadow-sm">
+              <div>
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    ${productsHtml}
+                    <div class="text-[11px] text-slate-500 mt-0.5 font-mono">${rec.name}</div>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    ${packBadge}
+                    <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">${rec.energy}s</span>
+                  </div>
+                </div>
+
+                <div class="mt-3">
+                  <span class="text-[10px] uppercase font-semibold text-slate-400 block mb-1">Ingredientes consumidos:</span>
+                  <div class="flex flex-wrap gap-1">
+                    ${ingsHtml}
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                <span class="text-[11px] text-slate-500">${rec.categories ? rec.categories.join(', ') : 'crafting'}</span>
+                <button onclick="addItemToInventory('${primaryResultName}')" class="text-xs bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 px-2.5 py-1 rounded transition-colors font-medium flex items-center gap-1">
+                  <span>+</span> Adicionar ao Inventário
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Missing One Content
+      const missingContainer = document.getElementById('missing-one-content');
+      if (missingOne.length === 0) {
+        missingContainer.innerHTML = '<p class="text-xs text-slate-500 italic">Nenhuma receita faltando exatamente 1 ingrediente.</p>';
+      } else {
+        missingContainer.innerHTML = missingOne.slice(0, 30).map(item => {
+          const rec = item.recipe;
+          const missing = item.missingItem;
+          const products = rec.results.map(r => `${r.name} ${r.amount > 1 ? 'x' + r.amount : ''}`).join(', ');
+
+          return `
+            <div class="flex flex-wrap items-center justify-between p-2.5 rounded-lg bg-[#13151b] border border-slate-800 text-xs gap-2">
+              <div>
+                <span class="font-bold text-white">${products}</span>
+                <span class="text-[11px] text-slate-500 ml-2 font-mono">(${rec.name})</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-rose-400 font-semibold bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/40">
+                  ❌ Falta: ${missing}
+                </span>
+                <button onclick="addItemToInventory('${missing}')" class="text-[11px] text-orange-400 hover:text-orange-300 underline font-medium">
+                  + Obter ${missing}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function toggleMissingOneSection() {
+      const content = document.getElementById('missing-one-content');
+      const arrow = document.getElementById('missing-toggle-arrow');
+      const isHidden = content.classList.contains('hidden');
+      content.classList.toggle('hidden', !isHidden);
+      arrow.innerText = isHidden ? '▲' : '▼';
+    }
+
+    // --- Subtab: Tree / DAG (What I need) ---
+    function populateTreeSelects() {
+      const needSelect = document.getElementById('tree-root-select');
+      const makeSelect = document.getElementById('make-root-select');
+      
+      const optionsHtml = FACTORIO_DATA.items.map(item => `
+        <option value="${item}">${item}</option>
+      `).join('');
+
+      needSelect.innerHTML = optionsHtml;
+      makeSelect.innerHTML = optionsHtml;
+
+      needSelect.value = 'electronic-circuit';
+      makeSelect.value = 'iron-plate';
+    }
+
+    function renderDependencyTree() {
+      const rootItem = document.getElementById('tree-root-select').value;
+      const container = document.getElementById('tree-container');
+
+      function buildNodeHtml(item, visited, depth = 0) {
+        const isRaw = FACTORIO_DATA.raw_materials.includes(item);
+        if (isRaw) {
+          return `
+            <div class="ml-${depth > 0 ? 6 : 0} my-1.5 flex items-center gap-2">
+              <span class="text-amber-400 text-sm">⛏</span>
+              <span class="font-bold text-amber-300">${item}</span>
+              <span class="text-[10px] text-amber-500/80 bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-800/30">Matéria-Prima</span>
+            </div>
+          `;
+        }
+
+        const matchingRecipes = FACTORIO_DATA.recipes.filter(r => r.results && r.results.some(res => res.name === item));
+        if (matchingRecipes.length === 0) {
+          return `
+            <div class="ml-${depth > 0 ? 6 : 0} my-1.5 flex items-center gap-2 text-slate-400">
+              <span>•</span> <span>${item}</span> <span class="text-[10px] italic text-slate-500">(Sem receita no banco)</span>
+            </div>
+          `;
+        }
+
+        const chosenRecipe = matchingRecipes[0];
+        const ingsHtml = chosenRecipe.ingredients.map(ing => {
+          if (visited.has(ing.name)) {
+            return `<div class="ml-6 text-rose-400 text-xs">↻ ${ing.name} (Ciclo)</div>`;
+          }
+          const nextVisited = new Set(visited);
+          nextVisited.add(ing.name);
+          return `
+            <div class="border-l-2 border-slate-700/60 pl-3 my-1">
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-300 font-semibold">${ing.name}</span>
+                <span class="text-orange-400 font-bold">x${ing.amount}</span>
+                <span class="text-[10px] text-slate-500">via ${chosenRecipe.name}</span>
+              </div>
+              ${buildNodeHtml(ing.name, nextVisited, depth + 1)}
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="my-2">
+            <div class="flex items-center gap-2 font-bold text-sm text-white bg-[#15171e] p-2 rounded-lg border border-slate-800">
+              <span class="text-emerald-400">📦</span>
+              <span>${item}</span>
+              <span class="text-xs font-normal text-slate-400">(${matchingRecipes.length} receitas disponíveis)</span>
+            </div>
+            <div class="ml-4 mt-2">
+              ${ingsHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = buildNodeHtml(rootItem, new Set([rootItem]));
+    }
+
+    // --- Subtab: What I Can Make ---
+    function renderMakeUses() {
+      const rootItem = document.getElementById('make-root-select').value;
+      const directUsesTable = document.getElementById('direct-uses-table');
+      const endProductsGrid = document.getElementById('end-products-grid');
+
+      const direct = FACTORIO_DATA.recipes.filter(r => r.ingredients && r.ingredients.some(i => i.name === rootItem));
+
+      if (direct.length === 0) {
+        directUsesTable.innerHTML = `<p class="text-xs text-slate-500 italic p-3">Nenhuma receita utiliza ${rootItem} como ingrediente direto (Produto Final).</p>`;
+      } else {
+        directUsesTable.innerHTML = `
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-[#15171e] text-slate-400 uppercase text-[10px] border-b border-slate-700">
+              <tr>
+                <th class="p-2.5">Receita</th>
+                <th class="p-2.5">Produtos</th>
+                <th class="p-2.5">Qtd Usada</th>
+                <th class="p-2.5">Outros Ingredientes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+              ${direct.map(rec => {
+                const used = rec.ingredients.filter(i => i.name === rootItem).reduce((acc, i) => acc + i.amount, 0);
+                const products = rec.results.map(r => `${r.name} (x${r.amount})`).join(', ');
+                const others = rec.ingredients.filter(i => i.name !== rootItem).map(i => `${i.name} (${i.amount})`).join(', ') || '<span class="text-slate-500">Nenhum</span>';
+                return `
+                  <tr class="hover:bg-slate-800/40">
+                    <td class="p-2.5 font-bold text-white">${rec.name}</td>
+                    <td class="p-2.5 text-emerald-300 font-semibold">${products}</td>
+                    <td class="p-2.5 text-orange-400 font-bold">${used}</td>
+                    <td class="p-2.5 text-slate-400">${others}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // Find transitive end products
+      const visited = new Set();
+      const endProducts = new Set();
+      const queue = [rootItem];
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (visited.has(curr)) continue;
+        visited.add(curr);
+
+        const uses = FACTORIO_DATA.recipes.filter(r => r.ingredients && r.ingredients.some(i => i.name === curr));
+        if (uses.length === 0) {
+          if (curr !== rootItem) endProducts.add(curr);
+        } else {
+          uses.forEach(u => {
+            u.results.forEach(res => {
+              if (!visited.has(res.name)) queue.push(res.name);
+            });
+          }});
+        }
+      }
+
+      if (endProducts.size === 0) {
+        endProductsGrid.innerHTML = '<span class="text-xs text-slate-500 italic">Nenhum produto final encontrado.</span>';
+      } else {
+        endProductsGrid.innerHTML = Array.from(endProducts).sort().map(p => `
+          <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-950/40 border border-emerald-700/40 text-emerald-200">
+            ${p}
+          </span>
+        `).join('');
+      }
+    }
+
+    // --- Subtab: Catalog Table ---
+    function renderCatalogTable() {
+      const query = (document.getElementById('catalog-search').value || '').toLowerCase().trim();
+      const tbody = document.getElementById('catalog-tbody');
+
+      const filtered = FACTORIO_DATA.recipes.filter(rec => {
+        if (!query) return true;
+        if (rec.name.toLowerCase().includes(query)) return true;
+        if (rec.results.some(r => r.name.toLowerCase().includes(query))) return true;
+        if (rec.ingredients.some(i => i.name.toLowerCase().includes(query))) return true;
+        return false;
+      });
+
+      tbody.innerHTML = filtered.map(rec => {
+        const results = rec.results.map(r => `<span class="font-bold text-emerald-300">${r.name} ${r.amount > 1 ? 'x' + r.amount : ''}</span>`).join(', ');
+        const ings = rec.ingredients.map(i => `${i.name} (${i.amount})`).join(', ');
+        return `
+          <tr class="hover:bg-slate-800/40">
+            <td class="p-3 font-mono font-bold text-white">${rec.name}</td>
+            <td class="p-3">${results}</td>
+            <td class="p-3 text-slate-400">${ings}</td>
+            <td class="p-3 text-slate-400 font-mono">${rec.energy}s</td>
+            <td class="p-3 font-semibold ${rec.pack === 'base' ? 'text-blue-400' : 'text-purple-400'}">${rec.pack}</td>
+            <td class="p-3 text-slate-500">${rec.categories ? rec.categories.join(', ') : 'crafting'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- Mode: Quality Calculator Matrix ---
+    function calculateQualityTable() {
+      const tier = parseInt(document.getElementById('qual-tier-select').value);
+      const modQual = document.getElementById('qual-mod-qual-select').value;
+      const count = parseInt(document.getElementById('qual-mod-count-input').value) || 1;
+
+      const baseChances = { 1: 0.010, 2: 0.020, 3: 0.025 };
+      const mults = { 'Normal': 1.0, 'Uncommon': 1.3, 'Rare': 1.6, 'Epic': 1.9, 'Legendary': 2.5 };
+
+      const Q = (baseChances[tier] || 0.025) * (mults[modQual] || 2.5) * count;
+      document.getElementById('total-q-display').innerHTML = `
+        ${(Q * 100).toFixed(3)}% <span class="text-xs text-slate-400 font-normal">(${Q.toFixed(5)})</span>
+      `;
+
+      const qualities = ["Normal", "Uncommon", "Rare", "Epic", "Legendary"];
+      const tbody = document.getElementById('quality-matrix-tbody');
+
+      function getOutputs(inTier) {
+        const probs = { 'Normal': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 0, 'Legendary': 0 };
+        if (inTier >= 4) {
+          probs['Legendary'] = 1.0;
+          return probs;
+        }
+        probs[qualities[inTier]] = Math.max(0, 1.0 - Q);
+        let currentP = Q;
+        let currTier = inTier + 1;
+        while (currTier < 4) {
+          probs[qualities[currTier]] = currentP * 0.90;
+          currentP *= 0.10;
+          currTier++;
+        }
+        probs['Legendary'] = currentP;
+        return probs;
+      }
+
+      tbody.innerHTML = qualities.map((qName, inTier) => {
+        const probs = getOutputs(inTier);
+        return `
+          <tr class="hover:bg-slate-800/40">
+            <td class="p-3 text-left font-bold text-white">${qName}</td>
+            <td class="p-3 font-mono">${probs['Normal'] > 0 ? (probs['Normal'] * 100).toFixed(2) + '%' : '-'}</td>
+            <td class="p-3 font-mono text-emerald-400">${probs['Uncommon'] > 0 ? (probs['Uncommon'] * 100).toFixed(2) + '%' : '-'}</td>
+            <td class="p-3 font-mono text-blue-400">${probs['Rare'] > 0 ? (probs['Rare'] * 100).toFixed(2) + '%' : '-'}</td>
+            <td class="p-3 font-mono text-purple-400">${probs['Epic'] > 0 ? (probs['Epic'] * 100).toFixed(2) + '%' : '-'}</td>
+            <td class="p-3 font-mono text-amber-400 font-bold">${probs['Legendary'] > 0 ? (probs['Legendary'] * 100).toFixed(2) + '%' : '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Initial setup on load
+    window.addEventListener('DOMContentLoaded', () => {
+      populateTreeSelects();
+      renderSelectedItems();
+      renderItemPicker();
+      updateCraftableResults();
+      calculateQualityTable();
+    });
+  </script>
+</body>
+</html>
