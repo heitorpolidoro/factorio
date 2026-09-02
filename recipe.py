@@ -2,9 +2,11 @@
 """
 Factorio 2.0 / Space Age - Recipe & Crafting Tool
 
-Mode: Recipe (formerly Recipe Query)
+Mode: Recipe
 Features:
-1. Craftable Items: Given a list of inventory items/ingredients, returns all direct items you can craft.
+1. Craftable Items: Given a list of inventory items/ingredients, returns direct items you can craft.
+   - Option to hide items already in inventory (avoiding duplicate suggestions)
+   - Option to ignore specific items/recipes
 2. What I Need (Dependency DAG): Breaks down an item into required sub-ingredients down to raw materials.
 3. What I Can Make (Usage & End Products): Shows direct uses and all downstream final products.
 4. Recipe Info & Search: Inspect any recipe or item.
@@ -134,52 +136,81 @@ def list_all_items(conn: sqlite3.Connection) -> List[str]:
 
 def find_craftable_recipes(
     recipes: List[Recipe],
-    available_items: Set[str]
-) -> Tuple[List[Recipe], List[Tuple[Recipe, Set[str]]]]:
+    available_items: Set[str],
+    hide_crafted: bool = True,
+    ignored_items: Optional[Set[str]] = None
+) -> Tuple[List[Recipe], List[Tuple[Recipe, Set[str]]], int]:
     norm_available = {item.strip().lower() for item in available_items}
+    ignored = {item.strip().lower() for item in (ignored_items or set())}
     fully_craftable = []
     missing_one = []
+    hidden_count = 0
 
     for recipe in recipes:
-        if not recipe.ingredients:
+        if not recipe.ingredients or not recipe.results:
             continue
+
+        # Check if output is ignored
+        if any(res.name.lower() in ignored for res in recipe.results):
+            continue
+
         req = recipe.ingredient_names
         diff = req - norm_available
+
         if len(diff) == 0:
+            # Check if all results are already in inventory
+            all_results_in_inv = all(res.name.lower() in norm_available for res in recipe.results)
+            if hide_crafted and all_results_in_inv:
+                hidden_count += 1
+                continue
             fully_craftable.append(recipe)
         elif len(diff) == 1:
             missing_one.append((recipe, diff))
 
-    return fully_craftable, missing_one
+    return fully_craftable, missing_one, hidden_count
 
 
 def display_craftable(
     available_items: List[str],
     show_missing_one: bool = False,
+    hide_crafted: bool = True,
+    ignored_items: Optional[List[str]] = None,
     include_recycling: bool = False
 ):
     conn = get_db_connection()
     recipes = load_all_recipes(conn, include_recycling=include_recycling)
     norm_items = {i.strip().lower() for i in available_items if i.strip()}
+    norm_ignored = {i.strip().lower() for i in (ignored_items or []) if i.strip()}
 
     if not norm_items:
         console.print("[yellow]Nenhum item informado. Use:[/] [cyan]python3 recipe.py craft <item1> <item2> ...[/cyan]")
         return
 
-    fully_craftable, missing_one = find_craftable_recipes(recipes, norm_items)
+    fully_craftable, missing_one, hidden_count = find_craftable_recipes(
+        recipes, norm_items, hide_crafted=hide_crafted, ignored_items=norm_ignored
+    )
 
     inv_str = ", ".join(f"[bold cyan]{item}[/bold cyan]" for item in sorted(norm_items))
+    header_text = f"[bold white]Itens no Inventário ({len(norm_items)}):[/bold white] {inv_str}"
+    if norm_ignored:
+        ign_str = ", ".join(f"[bold red]{item}[/bold red]" for item in sorted(norm_ignored))
+        header_text += f"\n[bold white]Itens Ignorados ({len(norm_ignored)}):[/bold white] {ign_str}"
+
     console.print(Panel(
-        f"[bold white]Itens no Inventário ({len(norm_items)}):[/bold white] {inv_str}",
+        header_text,
         title="[bold green]FACTORIO - RECEITAS DIRETAS FABRICÁVEIS[/bold green]",
         border_style="green"
     ))
 
     if not fully_craftable:
-        console.print("[bold yellow]Nenhum item direto pode ser fabricado exclusivamente com os itens selecionados.[/bold yellow]\n")
+        if hidden_count > 0:
+            console.print(f"[bold yellow]Todos os {hidden_count} itens fabricáveis já estão no seu inventário.[/bold yellow] (Use [cyan]--show-all[/cyan] para exibi-los mesmo assim)\n")
+        else:
+            console.print("[bold yellow]Nenhum item direto pode ser fabricado exclusivamente com os itens selecionados.[/bold yellow]\n")
     else:
+        title_suffix = f" (Ocultando {hidden_count} já no inventário)" if hidden_count > 0 else ""
         table = Table(
-            title=f"[bold green]✨ Itens que você consegue fabricar diretamente ({len(fully_craftable)} receitas)[/bold green]",
+            title=f"[bold green]✨ Itens que você consegue fabricar diretamente ({len(fully_craftable)} receitas){title_suffix}[/bold green]",
             header_style="bold magenta",
             border_style="bright_green"
         )
@@ -335,6 +366,8 @@ def main():
 
     craft_p = subparsers.add_parser("craft", aliases=["craftable"], help="Descobrir o que você pode fabricar com uma lista de itens")
     craft_p.add_argument("items", nargs="*", help="Lista de nomes de itens no inventário (ex: iron-plate copper-cable)")
+    craft_p.add_argument("--show-all", action="store_true", help="Mostrar itens mesmo que já estejam no inventário")
+    craft_p.add_argument("--ignore", "-i", nargs="*", default=[], help="Lista de itens para ignorar nas sugestões")
     craft_p.add_argument("--missing-one", "-m", action="store_true", help="Mostrar também receitas onde falta apenas 1 ingrediente")
     craft_p.add_argument("--recycling", action="store_true", help="Incluir receitas de reciclagem")
 
@@ -360,7 +393,13 @@ def main():
         if not args.items:
             interactive_mode()
         else:
-            display_craftable(args.items, show_missing_one=args.missing_one, include_recycling=args.recycling)
+            display_craftable(
+                args.items,
+                show_missing_one=args.missing_one,
+                hide_crafted=not args.show_all,
+                ignored_items=args.ignore,
+                include_recycling=args.recycling
+            )
     elif args.command == "need":
         display_need_tree(args.item)
     elif args.command == "make":

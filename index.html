@@ -583,6 +583,21 @@
     color: var(--accent-strong);
     background: var(--accent-soft);
   }
+  .craft-ignore-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 8px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-faint);
+    cursor: pointer;
+  }
+  .craft-ignore-btn:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-soft);
+  }
   .missing-section { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
   .missing-header {
     font-family: var(--font-display);
@@ -667,6 +682,20 @@
         <button class="preset-btn" onclick="applyInvPreset('starter')">Starter</button>
       </div>
       <div class="inventory-chips" id="inventory-chips"></div>
+      <div style="margin-top: 4px;">
+        <label style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="chk-hide-crafted" checked style="cursor: pointer;">
+          <span>Hide already in inventory</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="ignored-controls" class="inventory-section" style="display:none; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="field-label">Ignored Items (<span id="ignored-count">0</span>)</span>
+        <button id="ignored-clear-btn" class="preset-btn" style="color:var(--red); border-color:var(--red-soft);">Clear</button>
+      </div>
+      <div class="inventory-chips" id="ignored-chips"></div>
     </div>
 
     <div id="planning-controls" style="display:none">
@@ -741,17 +770,34 @@
     </div>
 
     <div class="craft-view" id="craft-view" style="display:none">
-      <div class="list-header">
-        <h2 id="craft-title">Items you can directly craft</h2>
-        <span class="list-count" id="craft-count"></span>
+      <div class="list-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 id="craft-title">Items you can directly craft</h2>
+          <span class="list-count" id="craft-count"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="chk-hide-crafted-view" checked style="cursor: pointer;">
+            <span>Hide already in inventory</span>
+          </label>
+        </div>
       </div>
       <div class="craft-grid" id="craft-grid"></div>
+      
       <div class="missing-section">
         <div class="missing-header" id="missing-header" onclick="toggleMissingSection()">
           <span>Almost craftable (missing 1 ingredient) (<span id="missing-count">0</span>)</span>
           <span id="missing-arrow">&#9662;</span>
         </div>
         <div class="missing-list" id="missing-list" style="display:none"></div>
+      </div>
+
+      <div class="missing-section" id="ignored-view-section" style="display:none">
+        <div class="missing-header" id="ignored-header" onclick="toggleIgnoredSection()">
+          <span>Ignored items (<span id="ignored-view-count">0</span>)</span>
+          <span id="ignored-arrow">&#9662;</span>
+        </div>
+        <div class="missing-list" id="ignored-view-list" style="display:none"></div>
       </div>
     </div>
   </main>
@@ -1042,6 +1088,8 @@
     mode: "query",
     direction: "down",
     inventory: new Set(["iron-plate", "copper-plate", "copper-cable"]),
+    ignored: new Set(),
+    hideCrafted: true,
     overrides: {},
     imports: new Set(),
     selectedItem: null,
@@ -1064,6 +1112,12 @@
   const inventoryChips = document.getElementById("inventory-chips");
   const invCount = document.getElementById("inv-count");
   const invClearBtn = document.getElementById("inv-clear-btn");
+  const chkHideCrafted = document.getElementById("chk-hide-crafted");
+  const chkHideCraftedView = document.getElementById("chk-hide-crafted-view");
+  const ignoredControls = document.getElementById("ignored-controls");
+  const ignoredChips = document.getElementById("ignored-chips");
+  const ignoredCount = document.getElementById("ignored-count");
+  const ignoredClearBtn = document.getElementById("ignored-clear-btn");
   const craftView = document.getElementById("craft-view");
   const craftTitle = document.getElementById("craft-title");
   const craftCount = document.getElementById("craft-count");
@@ -1072,6 +1126,10 @@
   const missingCount = document.getElementById("missing-count");
   const missingList = document.getElementById("missing-list");
   const missingArrow = document.getElementById("missing-arrow");
+  const ignoredViewSection = document.getElementById("ignored-view-section");
+  const ignoredViewCount = document.getElementById("ignored-view-count");
+  const ignoredViewList = document.getElementById("ignored-view-list");
+  const ignoredArrow = document.getElementById("ignored-arrow");
   const graphView = document.getElementById("graph-view");
   const svg = document.getElementById("graph-svg");
   const viewport = document.getElementById("viewport");
@@ -1637,7 +1695,9 @@
       renderPlanning();
     } else {
       renderDirectionButtons();
-      inventoryControls.style.display = (state.direction === "craft") ? "flex" : "none";
+      const isCraft = (state.direction === "craft");
+      inventoryControls.style.display = isCraft ? "flex" : "none";
+      ignoredControls.style.display = isCraft ? "flex" : "none";
       if (state.direction === "down") {
         craftView.style.display = "none";
         renderGraph();
@@ -1686,6 +1746,24 @@
   if (invClearBtn) {
     invClearBtn.addEventListener("click", function () {
       state.inventory.clear();
+      render();
+    });
+  }
+  if (ignoredClearBtn) {
+    ignoredClearBtn.addEventListener("click", function () {
+      state.ignored.clear();
+      render();
+    });
+  }
+  if (chkHideCrafted) {
+    chkHideCrafted.addEventListener("change", function () {
+      state.hideCrafted = chkHideCrafted.checked;
+      render();
+    });
+  }
+  if (chkHideCraftedView) {
+    chkHideCraftedView.addEventListener("change", function () {
+      state.hideCrafted = chkHideCraftedView.checked;
       render();
     });
   }
