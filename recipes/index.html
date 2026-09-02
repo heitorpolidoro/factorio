@@ -1,5 +1,6 @@
 <meta charset="utf-8">
 <title>Recipe Tree Explorer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1540,7 +1541,45 @@
     missingArrow.innerHTML = isHidden ? "&#9652;" : "&#9662;";
   };
 
-  function renderCraft() {
+  function renderIgnoredChips() {
+    if (!ignoredChips) return;
+    ignoredCount.textContent = state.ignored.size;
+    ignoredChips.innerHTML = "";
+    if (state.ignored.size === 0) {
+      ignoredChips.innerHTML = '<span style="font-size:11px; color:var(--text-faint); font-family:var(--font-mono);">No ignored items. Click 🚫 on any card to ignore.</span>';
+      return;
+    }
+    const items = Array.from(state.ignored).sort();
+    items.forEach(function (name) {
+      const chip = document.createElement("div");
+      chip.className = "inventory-chip";
+      const img = document.createElement("img");
+      img.src = iconSrc(name);
+      img.alt = "";
+      const span = document.createElement("span");
+      span.textContent = name;
+      const btn = document.createElement("button");
+      btn.textContent = "×";
+      btn.title = "Unignore " + name;
+      btn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        state.ignored.delete(name);
+        render();
+      });
+      chip.appendChild(img);
+      chip.appendChild(span);
+      chip.appendChild(btn);
+      ignoredChips.appendChild(chip);
+    });
+  }
+
+  window.toggleIgnoredSection = function() {
+    const isHidden = ignoredViewList.style.display === "none";
+    ignoredViewList.style.display = isHidden ? "flex" : "none";
+    ignoredArrow.innerHTML = isHidden ? "&#9652;" : "&#9662;";
+  };
+
+    function renderCraft() {
     graphView.style.display = "none";
     listView.style.display = "none";
     planningView.style.display = "none";
